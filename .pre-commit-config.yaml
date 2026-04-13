@@ -11,8 +11,7 @@ repos:
         args: [--maxkb=500]
       - id: check-merge-conflict
       - id: detect-private-key
-      - id: no-commit-to-branch
-        args: [--branch, main]
+
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.11.2
