@@ -1,0 +1,30 @@
+id: https://w3id.org/fluxo/schema
+name: fluxo-schema
+title: FLUXO Schema
+description: >-
+  A LinkML data model for 13C-MFA simulation studies, grounded in the
+  FLUXO (Metabolic Flux Analysis) ontology. Provides a structured,
+  ontology-compliant schema for curating experimental data, metabolic
+  network models, simulation parameters, and flux solutions from tools
+  such as freeflux, 13CFLUX2, influx_si, and INCA.
+
+license: MIT
+version: 0.1.0
+
+prefixes:
+  linkml: https://w3id.org/linkml/
+  fluxo: http://purl.obolibrary.org/obo/FLUXO_
+  obo: http://purl.obolibrary.org/obo/
+  schema: http://schema.org/
+  ORCID: https://orcid.org/
+
+default_prefix: fluxo
+default_range: string
+
+imports:
+  - linkml:types
+  - enumerations
+  - study
+  - network
+  - experiment
+  - simulation_run

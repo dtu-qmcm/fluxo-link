@@ -1,0 +1,165 @@
+id: https://w3id.org/fluxo/schema/experiment
+name: fluxo-experiment
+title: FLUXO Experiment Module
+description: >-
+  Isotope labeling experiment classes including tracer specifications,
+  measurement groups, and MID data points.
+
+license: MIT
+
+prefixes:
+  linkml: https://w3id.org/linkml/
+  fluxo: http://purl.obolibrary.org/obo/FLUXO_
+
+default_prefix: fluxo
+default_range: string
+
+imports:
+  - linkml:types
+  - enumerations
+
+classes:
+  LabelingExperiment:
+    class_uri: fluxo:FLUXO_0000049
+    description: >-
+      An isotope labeling experiment defining the tracer setup,
+      measurement groups, and associated data for a 13C-MFA study.
+    attributes:
+      id:
+        description: Unique identifier for the experiment.
+        identifier: true
+        required: true
+      name:
+        description: Human-readable name of the experiment.
+      experiment_type:
+        description: Whether the experiment is steady-state or transient.
+        range: ExperimentTypeEnum
+        required: true
+      analytical_method:
+        description: Primary analytical method used for measurements.
+        slot_uri: fluxo:FLUXO_0000190
+        range: AnalyticalMethodEnum
+      labeled_sources:
+        description: Labeled substrate (tracer mixture) specifications.
+        range: LabeledSource
+        multivalued: true
+        inlined_as_list: true
+      measurement_groups:
+        description: Measurement groups with MID or flux data.
+        range: MeasurementGroup
+        multivalued: true
+        inlined_as_list: true
+
+  LabeledSource:
+    class_uri: fluxo:FLUXO_0000078
+    description: >-
+      A labeled source (tracer mixture) supplied to the biological
+      system. Consists of one or more isotopically labeled tracer
+      isotopomers mixed at specified fractions.
+    attributes:
+      id:
+        description: Unique identifier for the labeled source.
+        identifier: true
+        required: true
+      metabolite_id:
+        description: >-
+          Reference to the input metabolite in the network model.
+        required: true
+      tracers:
+        description: Individual tracer isotopomers in the mixture.
+        range: TracerIsotopomer
+        multivalued: true
+        inlined_as_list: true
+
+  TracerIsotopomer:
+    class_uri: fluxo:FLUXO_0000134
+    description: >-
+      A specific isotopically labeled form of a tracer molecule,
+      defined by its labeling pattern, fraction, and purity.
+    attributes:
+      labeling_pattern:
+        description: >-
+          Labeling pattern as a binary string where 1 = labeled atom
+          and 0 = unlabeled atom (e.g., "100000" for [1-13C]glucose).
+        required: true
+        pattern: "^[01xX]+$"
+      tracer_fraction:
+        description: >-
+          Proportion of this tracer isotopomer in the labeled source.
+          Should sum to <= 1.0 across all tracers for a source.
+        slot_uri: fluxo:FLUXO_0000138
+        range: float
+        minimum_value: 0.0
+        maximum_value: 1.0
+      isotopic_purity:
+        description: >-
+          Purity of the isotopic label (e.g., 0.99 for 99 atom % 13C).
+        slot_uri: fluxo:FLUXO_0000139
+        range: float
+        minimum_value: 0.0
+        maximum_value: 1.0
+
+  MeasurementGroup:
+    class_uri: fluxo:FLUXO_0000143
+    description: >-
+      A group of related measurements (e.g., one MID measurement
+      for a metabolite fragment at a given time point).
+    attributes:
+      id:
+        description: Unique identifier for the measurement group.
+        identifier: true
+        required: true
+      metabolite_id:
+        description: >-
+          Reference to the measured metabolite in the network model.
+        required: true
+      measurement_type:
+        description: The type of measurement in this group.
+        range: MeasurementTypeEnum
+        required: true
+      analytical_method:
+        description: Analytical method for this measurement.
+        range: AnalyticalMethodEnum
+      time_point:
+        description: >-
+          Measurement time point for non-stationary experiments.
+        slot_uri: fluxo:FLUXO_0000056
+        range: float
+      data_points:
+        description: Individual measurement data points.
+        range: MIDDataPoint
+        multivalued: true
+        inlined_as_list: true
+      scale_method:
+        description: Scaling method for this measurement group.
+        range: ScaleMethodEnum
+      error_model_expression:
+        description: >-
+          Mathematical expression for the error model (e.g.,
+          "sd = 0.01 * value").
+        slot_uri: fluxo:FLUXO_0000091
+
+  MIDDataPoint:
+    description: >-
+      A single isotopologue measurement value (one m+i entry in an MID).
+    attributes:
+      isotopologue_index:
+        description: >-
+          Isotopologue mass shift index (m+0, m+1, ..., m+n).
+        range: integer
+        minimum_value: 0
+        required: true
+      value:
+        description: >-
+          Measured fractional abundance of this isotopologue.
+        slot_uri: fluxo:FLUXO_0000143
+        range: float
+        required: true
+        minimum_value: 0.0
+        maximum_value: 1.0
+      standard_deviation:
+        description: >-
+          Standard deviation (measurement uncertainty) of the value.
+        slot_uri: fluxo:FLUXO_0000208
+        range: float
+        minimum_value: 0.0

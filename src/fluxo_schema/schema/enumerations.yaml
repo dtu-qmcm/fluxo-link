@@ -1,0 +1,240 @@
+id: https://w3id.org/fluxo/schema/enumerations
+name: fluxo-enumerations
+title: FLUXO Enumerations
+description: >-
+  Semantic enumerations backed by FLUXO ontology terms for software,
+  methods, file formats, analytical methods, and flux types.
+
+license: MIT
+
+prefixes:
+  linkml: https://w3id.org/linkml/
+  fluxo: http://purl.obolibrary.org/obo/FLUXO_
+
+default_prefix: fluxo
+default_range: string
+
+imports:
+  - linkml:types
+
+enums:
+  MFASoftwareEnum:
+    description: >-
+      13C-MFA software tools as defined in the FLUXO ontology.
+    permissible_values:
+      freeflux:
+        description: FreeFlux - open source Python package for MFA
+        meaning: fluxo:FLUXO_0000117
+      13CFLUX2:
+        description: 13CFLUX2 - MFA software using FluxML
+        meaning: fluxo:FLUXO_0000244
+      influx_si:
+        description: influx_si - MFA software with FTBL input
+        meaning: fluxo:FLUXO_0000108
+      INCA:
+        description: >-
+          INCA - Isotopomer Network Compartmental Analysis (MATLAB)
+        meaning: fluxo:FLUXO_0000249
+      mfapy:
+        description: MFApy - Python MFA package
+        meaning: fluxo:FLUXO_0000111
+      OpenFLUX2:
+        description: OpenFLUX2 - open source MFA tool
+        meaning: fluxo:FLUXO_0000112
+      BayFlux:
+        description: BayFlux - Bayesian flux estimation
+        meaning: fluxo:FLUXO_0000120
+
+  MFAMethodEnum:
+    description: >-
+      Metabolic flux analysis method types from the FLUXO ontology.
+    permissible_values:
+      IST_MFA:
+        description: Isotopically stationary MFA
+        meaning: fluxo:FLUXO_0000043
+      INST_MFA:
+        description: Isotopically non-stationary MFA
+        meaning: fluxo:FLUXO_0000044
+      dynamic_MFA:
+        description: Dynamic isotope-based MFA
+        meaning: fluxo:FLUXO_0000045
+
+  InputFormatEnum:
+    description: >-
+      File formats used as input for MFA software tools.
+    permissible_values:
+      FluxML:
+        description: FluxML XML format
+        meaning: fluxo:FLUXO_0000098
+      FTBL:
+        description: FTBL tabular format
+        meaning: fluxo:FLUXO_0000100
+      MTF:
+        description: MTF format
+        meaning: fluxo:FLUXO_0000101
+      freeflux_csv:
+        description: FreeFlux CSV format
+        meaning: fluxo:FLUXO_0000230
+      INCA_mat:
+        description: INCA MATLAB .mat format
+        meaning: fluxo:FLUXO_0000231
+
+  IsotopicStateSpaceEnum:
+    description: >-
+      Isotopic state-space representations used in MFA computation.
+    permissible_values:
+      isotopomer:
+        description: Isotopomer representation
+        meaning: fluxo:FLUXO_0000148
+      cumomer:
+        description: Cumomer representation
+        meaning: fluxo:FLUXO_0000149
+      EMU:
+        description: Elementary Metabolite Unit representation
+        meaning: fluxo:FLUXO_0000150
+
+  AnalyticalMethodEnum:
+    description: >-
+      Analytical measurement methods for isotopologue data.
+    permissible_values:
+      GC_MS:
+        description: Gas chromatography-mass spectrometry
+        meaning: fluxo:FLUXO_0000192
+      LC_MS:
+        description: Liquid chromatography-mass spectrometry
+        meaning: fluxo:FLUXO_0000191
+      tandem_MS:
+        description: Tandem mass spectrometry (MS/MS)
+        meaning: fluxo:FLUXO_0000193
+      IRMS:
+        description: Isotope ratio mass spectrometry
+        meaning: fluxo:FLUXO_0000194
+      NMR:
+        description: Nuclear magnetic resonance
+        meaning: fluxo:FLUXO_0000195
+
+  FluxTypeEnum:
+    description: >-
+      Types of metabolic flux values.
+    permissible_values:
+      net:
+        description: Net flux (forward minus backward)
+        meaning: fluxo:FLUXO_0000027
+      forward:
+        description: Forward flux
+        meaning: fluxo:FLUXO_0000025
+      backward:
+        description: Backward (reverse) flux
+        meaning: fluxo:FLUXO_0000026
+      exchange:
+        description: Exchange flux (min of forward and backward)
+        meaning: fluxo:FLUXO_0000028
+
+  AtomAnnotationTypeEnum:
+    description: >-
+      Annotation notation types for atom transitions.
+    permissible_values:
+      letter:
+        description: Letter-based atom annotation (a-z, A-Z)
+        meaning: fluxo:FLUXO_0000073
+      FluxML:
+        description: FluxML-defined atom mapping notation
+        meaning: fluxo:FLUXO_0000074
+      InChI:
+        description: InChI-based atom mapping notation
+        meaning: fluxo:FLUXO_0000075
+
+  ReactionTypeEnum:
+    description: >-
+      Types of reactions in a metabolic network model.
+    permissible_values:
+      metabolic:
+        description: Standard metabolic reaction
+        meaning: fluxo:FLUXO_0000005
+      transport:
+        description: Transport reaction between compartments
+        meaning: fluxo:FLUXO_0000128
+      exchange:
+        description: Exchange reaction at network boundary
+        meaning: fluxo:FLUXO_0000202
+      biomass:
+        description: Abstract biomass reaction
+        meaning: fluxo:FLUXO_0000067
+      demand:
+        description: Demand reaction
+        meaning: fluxo:FLUXO_0000201
+      sink:
+        description: Sink reaction
+        meaning: fluxo:FLUXO_0000203
+
+  ConstraintTypeEnum:
+    description: >-
+      Types of flux constraints.
+    permissible_values:
+      equality:
+        description: Flux equality constraint (fixed linear combination)
+        meaning: fluxo:FLUXO_0000152
+      inequality:
+        description: Flux inequality constraint (bounds on combination)
+        meaning: fluxo:FLUXO_0000153
+      bound:
+        description: Individual flux bound (lower/upper)
+        meaning: fluxo:FLUXO_0000206
+
+  ExperimentTypeEnum:
+    description: >-
+      Types of isotope labeling experiments.
+    permissible_values:
+      isotopic_steady_state:
+        description: Isotopically steady-state labeling experiment
+        meaning: fluxo:FLUXO_0000179
+      isotopic_non_stationary:
+        description: >-
+          Isotopically non-stationary (transient) labeling experiment
+        meaning: fluxo:FLUXO_0000180
+
+  MeasurementTypeEnum:
+    description: >-
+      Types of measurements in a labeling experiment.
+    permissible_values:
+      MID:
+        description: >-
+          Mass isotopologue distribution (also called MDV or ID)
+        meaning: fluxo:FLUXO_0000143
+      flux:
+        description: Measured external flux
+        meaning: fluxo:FLUXO_0000124
+      pool_size:
+        description: Metabolite pool size measurement
+        meaning: fluxo:FLUXO_0000062
+
+  ScaleMethodEnum:
+    description: >-
+      Scaling methods for measurement groups.
+    permissible_values:
+      auto:
+        description: Automatic scaling
+      one:
+        description: Scale to one
+
+  GoodnessAssessmentEnum:
+    description: >-
+      Assessment of goodness-of-fit for a flux solution.
+    permissible_values:
+      accepted:
+        description: Fit passes chi-square test (p > 0.05)
+      borderline:
+        description: Fit is borderline (0.01 < p < 0.05)
+      rejected:
+        description: Fit fails chi-square test (p < 0.01)
+
+  ParticipantRoleEnum:
+    description: >-
+      Role of a metabolite in a reaction.
+    permissible_values:
+      substrate:
+        description: Substrate (educt, consumed)
+        meaning: fluxo:FLUXO_0000168
+      product:
+        description: Product (produced)
+        meaning: fluxo:FLUXO_0000169

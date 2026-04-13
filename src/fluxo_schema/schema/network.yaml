@@ -1,0 +1,244 @@
+id: https://w3id.org/fluxo/schema/network
+name: fluxo-network
+title: FLUXO Network Module
+description: >-
+  Metabolic network model classes including metabolites, reactions,
+  atom transitions, and flux constraints.
+
+license: MIT
+
+prefixes:
+  linkml: https://w3id.org/linkml/
+  fluxo: http://purl.obolibrary.org/obo/FLUXO_
+
+default_prefix: fluxo
+default_range: string
+
+imports:
+  - linkml:types
+  - enumerations
+
+classes:
+  MetabolicNetworkModel:
+    class_uri: fluxo:FLUXO_0000057
+    description: >-
+      A computational representation of a metabolic network, including
+      metabolites, reactions, compartments, and atom transitions.
+    attributes:
+      id:
+        description: Unique identifier for the network model.
+        identifier: true
+        required: true
+      name:
+        description: Human-readable name of the network model.
+      compartments:
+        description: List of compartment names in the model.
+        slot_uri: fluxo:FLUXO_0000058
+        multivalued: true
+      metabolites:
+        description: Metabolite definitions in the network.
+        range: NetworkMetabolite
+        multivalued: true
+        inlined_as_list: true
+      reactions:
+        description: Reaction definitions in the network.
+        range: NetworkReaction
+        multivalued: true
+        inlined_as_list: true
+
+  NetworkMetabolite:
+    class_uri: fluxo:FLUXO_0000172
+    description: >-
+      A metabolite in a metabolic network model, with properties
+      relevant for 13C-MFA.
+    attributes:
+      id:
+        description: Unique metabolite identifier (e.g., G6P_c).
+        identifier: true
+        required: true
+      name:
+        description: Human-readable metabolite name.
+      formula:
+        description: Chemical formula for tracked elements.
+        slot_uri: fluxo:FLUXO_0000199
+      charge:
+        description: Molecular charge.
+        slot_uri: fluxo:FLUXO_0000200
+        range: integer
+      compartment:
+        description: Compartment where the metabolite resides.
+        slot_uri: fluxo:FLUXO_0000058
+      n_tracked_atoms:
+        description: >-
+          Number of atoms of the tracer element in this metabolite
+          (e.g., 6 for carbons in glucose).
+        range: integer
+        minimum_value: 0
+      inchi:
+        description: InChI identifier for the metabolite.
+        slot_uri: fluxo:FLUXO_0000239
+      smiles:
+        description: SMILES representation of the metabolite.
+        slot_uri: fluxo:FLUXO_0000240
+      is_pseudo:
+        description: >-
+          Whether this is a pseudo-metabolite (e.g., biomass) with no
+          biological counterpart.
+        slot_uri: fluxo:FLUXO_0000061
+        range: boolean
+        ifabsent: false
+
+  NetworkReaction:
+    class_uri: fluxo:FLUXO_0000005
+    description: >-
+      A biochemical reaction in a metabolic network model.
+    attributes:
+      id:
+        description: Unique reaction identifier (e.g., PGI, SCS).
+        identifier: true
+        required: true
+      name:
+        description: Human-readable reaction name.
+      reversibility:
+        description: >-
+          Whether the reaction can proceed in both directions.
+        slot_uri: fluxo:FLUXO_0000007
+        range: boolean
+        required: true
+        ifabsent: true
+      reaction_type:
+        description: The type of reaction.
+        range: ReactionTypeEnum
+      substrates:
+        description: Substrate (educt) participants.
+        range: ReactionParticipant
+        multivalued: true
+        inlined_as_list: true
+      products:
+        description: Product participants.
+        range: ReactionParticipant
+        multivalued: true
+        inlined_as_list: true
+      atom_transition_variants:
+        description: >-
+          Atom transition variants for this reaction. Multiple variants
+          exist when symmetric compounds create ambiguity in atom
+          transitions.
+        range: AtomTransitionVariant
+        multivalued: true
+        inlined_as_list: true
+      is_lumped:
+        description: >-
+          Whether this is a lumped reaction combining multiple steps.
+        slot_uri: fluxo:FLUXO_0000066
+        range: boolean
+        ifabsent: false
+      is_pseudo:
+        description: >-
+          Whether this is a pseudo-reaction with no biological counterpart.
+        slot_uri: fluxo:FLUXO_0000065
+        range: boolean
+        ifabsent: false
+
+  ReactionParticipant:
+    description: >-
+      A metabolite participating in a reaction with a specific
+      stoichiometric coefficient.
+    attributes:
+      metabolite_id:
+        description: >-
+          Reference to the metabolite identifier in the network model.
+        required: true
+      stoichiometry:
+        description: >-
+          Stoichiometric coefficient (absolute value).
+        slot_uri: fluxo:FLUXO_0000205
+        range: float
+        ifabsent: float(1.0)
+      role:
+        description: Whether this participant is a substrate or product.
+        range: ParticipantRoleEnum
+        required: true
+
+  AtomTransitionVariant:
+    description: >-
+      A variant of atom transitions for a reaction. Reactions involving
+      symmetric compounds have multiple variants because the atom mapping
+      is ambiguous.
+    attributes:
+      variant_id:
+        description: >-
+          Identifier for this variant (e.g., "SCS___1", "SCS___2").
+        required: true
+      transitions:
+        description: Individual atom-to-atom transition mappings.
+        range: AtomTransition
+        multivalued: true
+        inlined_as_list: true
+
+  AtomTransition:
+    class_uri: fluxo:FLUXO_0000155
+    description: >-
+      A single atom-to-atom mapping from a substrate atom to a product
+      atom in a reaction.
+    attributes:
+      substrate_metabolite_id:
+        description: >-
+          Identifier of the substrate metabolite containing the source
+          atom.
+        required: true
+      substrate_atom_index:
+        description: >-
+          Zero-based index of the atom position in the substrate
+          metabolite.
+        slot_uri: fluxo:FLUXO_0000069
+        range: integer
+        minimum_value: 0
+        required: true
+      product_metabolite_id:
+        description: >-
+          Identifier of the product metabolite containing the destination
+          atom.
+        required: true
+      product_atom_index:
+        description: >-
+          Zero-based index of the atom position in the product metabolite.
+        slot_uri: fluxo:FLUXO_0000069
+        range: integer
+        minimum_value: 0
+        required: true
+      annotation_type:
+        description: The notation used for this atom transition.
+        slot_uri: fluxo:FLUXO_0000072
+        range: AtomAnnotationTypeEnum
+
+  FluxConstraint:
+    class_uri: fluxo:FLUXO_0000068
+    description: >-
+      A constraint on metabolic flux values in the network model.
+    attributes:
+      id:
+        description: Unique identifier for the constraint.
+        identifier: true
+        required: true
+      reaction_id:
+        description: >-
+          Reference to the reaction this constraint applies to.
+        required: true
+      constraint_type:
+        description: The type of constraint.
+        range: ConstraintTypeEnum
+        required: true
+      lower_bound:
+        description: Lower bound for the flux value.
+        range: float
+      upper_bound:
+        description: Upper bound for the flux value.
+        range: float
+      fixed_value:
+        description: Fixed value for equality constraints.
+        range: float
+      expression:
+        description: >-
+          Mathematical expression for linear combination constraints.
+        slot_uri: fluxo:FLUXO_0000223

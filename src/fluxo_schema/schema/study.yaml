@@ -1,0 +1,104 @@
+id: https://w3id.org/fluxo/schema/study
+name: fluxo-study
+title: FLUXO Study Module
+description: >-
+  Study-level provenance classes for 13C-MFA investigations, including
+  contributors, organism information, and publication metadata.
+
+license: MIT
+
+prefixes:
+  linkml: https://w3id.org/linkml/
+  fluxo: http://purl.obolibrary.org/obo/FLUXO_
+  schema: http://schema.org/
+
+default_prefix: fluxo
+default_range: string
+
+imports:
+  - linkml:types
+  - enumerations
+
+classes:
+  Study:
+    class_uri: fluxo:FLUXO_0000162
+    description: >-
+      A fluxomics investigation comprising one or more 13C-MFA simulation
+      studies, their experimental data, metabolic models, and results.
+    attributes:
+      id:
+        description: Unique identifier for the study.
+        identifier: true
+        required: true
+      name:
+        description: Human-readable name of the study.
+        required: true
+      description:
+        description: Detailed description of the study.
+      publication_doi:
+        description: DOI of the associated publication.
+        range: uriorcurie
+      contributors:
+        description: List of contributors to this study.
+        range: Contributor
+        multivalued: true
+        inlined_as_list: true
+      organism:
+        description: Organism and strain information.
+        range: OrganismInfo
+        inlined: true
+      study_type:
+        description: The MFA method used in this study.
+        range: MFAMethodEnum
+
+  Contributor:
+    class_uri: fluxo:FLUXO_0000253
+    description: >-
+      A person who contributed to a fluxomics investigation.
+    attributes:
+      id:
+        description: Unique identifier for the contributor.
+        identifier: true
+        required: true
+      name:
+        description: Full name of the contributor.
+        slot_uri: fluxo:FLUXO_0000255
+        required: true
+      orcid:
+        description: ORCID identifier of the contributor.
+        slot_uri: fluxo:FLUXO_0000256
+        range: uriorcurie
+      email:
+        description: Email address of the contributor.
+        slot_uri: fluxo:FLUXO_0000257
+      organization:
+        description: Affiliated organization.
+        slot_uri: fluxo:FLUXO_0000258
+
+  OrganismInfo:
+    description: >-
+      Organism and cultivation information for the biological system
+      under study.
+    attributes:
+      id:
+        description: Unique identifier for the organism info record.
+        identifier: true
+        required: true
+      organism_name:
+        description: Name of the organism (e.g., Escherichia coli).
+        slot_uri: fluxo:FLUXO_0000181
+        required: true
+      strain:
+        description: Strain designation (e.g., BW25113).
+        slot_uri: fluxo:FLUXO_0000182
+      culture_medium:
+        description: Growth medium used for cultivation.
+        slot_uri: fluxo:FLUXO_0000184
+      specific_growth_rate:
+        description: >-
+          Measured specific growth rate of the organism.
+        slot_uri: fluxo:FLUXO_0000084
+        range: float
+      growth_rate_unit:
+        description: Unit for the growth rate (e.g., 1/h).
+        slot_uri: fluxo:FLUXO_0000219
