@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CHANGELOG — FLUXO Schema</title>
+<style>
+  :root { --bg: #1a1a2e; --fg: #e0e0e0; --accent: #7ec8e3; --muted: #888; --code-bg: #16213e; }
+  body { font-family: 'Fira Code', 'Cascadia Code', monospace; background: var(--bg); color: var(--fg); max-width: 900px; margin: 0 auto; padding: 2rem; line-height: 1.6; }
+  h1, h2 { color: var(--accent); border-bottom: 1px solid #333; padding-bottom: 0.3rem; }
+  code { background: var(--code-bg); padding: 0.15em 0.4em; border-radius: 3px; font-size: 0.9em; }
+  pre { background: var(--code-bg); padding: 1rem; border-radius: 6px; overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th, td { border: 1px solid #333; padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--code-bg); }
+  .entry { margin-bottom: 1.5rem; padding: 1rem; background: #0f346020; border-left: 3px solid var(--accent); border-radius: 0 6px 6px 0; }
+  .entry h3 { margin: 0 0 0.5rem 0; color: var(--accent); }
+  .date { color: var(--muted); font-size: 0.85em; }
+  .tag { display: inline-block; padding: 0.1em 0.5em; border-radius: 4px; font-size: 0.8em; margin-right: 0.3em; }
+  .tag-added { background: #1b4332; color: #95d5b2; }
+  .tag-changed { background: #2a2a4a; color: #7ec8e3; }
+  .note { color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+
+<h1>📋 CHANGELOG — FLUXO Schema</h1>
+<p>Project change log. Updated by the AI agent as changes are made.</p>
+
+<hr>
+
+<h2>v0.1.0 — Initial Setup</h2>
+
+<div class="entry">
+  <h3>Initial Project Setup <span class="date">2026-05-12</span></h3>
+  <p>
+    <span class="tag tag-added">added</span>
+    <span class="tag tag-added">schema</span>
+    <span class="tag tag-added">dev-tooling</span>
+  </p>
+  <ul>
+    <li>Established project repository with LinkML schema backbone</li>
+    <li>Created 6 schema modules totaling 974 lines:
+      <ul>
+        <li><code>fluxo_schema.yaml</code> — Main schema (30 lines)</li>
+        <li><code>enumerations.yaml</code> — FLUXO ontology-backed enums (240 lines)</li>
+        <li><code>study.yaml</code> — Study provenance (104 lines)</li>
+        <li><code>network.yaml</code> — Metabolic network model (244 lines)</li>
+        <li><code>experiment.yaml</code> — Labeling experiments (165 lines)</li>
+        <li><code>simulation_run.yaml</code> — Simulation runs (191 lines)</li>
+      </ul>
+    </li>
+    <li>Set up Python package with <code>pyproject.toml</code> (hatchling build, uv package manager)</li>
+    <li>Configured dev tooling: pytest, ruff, mypy, pre-commit</li>
+    <li>Added <code>.pre-commit-config.yaml</code> with lint + format hooks</li>
+  </ul>
+</div>
+
+<hr>
+
+<h2>Git History</h2>
+<table>
+  <tr><th>Commit</th><th>Message</th></tr>
+  <tr><td><code>78b0410</code></td><td>Remove no-commit-to-branch hook from pre-commit</td></tr>
+  <tr><td><code>e4cae2d</code></td><td>Initial project setup with LinkML schema backbone</td></tr>
+  <tr><td><code>e954a43</code></td><td>Initial commit</td></tr>
+</table>
+
+<hr>
+
+<p class="note">This changelog is maintained by the AI agent. Entries are appended as changes are made.</p>
+
+</body>
+</html>
