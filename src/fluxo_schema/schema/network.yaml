@@ -49,8 +49,7 @@ classes:
   NetworkMetabolite:
     class_uri: fluxo:FLUXO_0000172
     description: >-
-      A metabolite in a metabolic network model, with properties
-      relevant for 13C-MFA.
+      A metabolite in a metabolic network model.
     attributes:
       id:
         description: Unique metabolite identifier (e.g., G6P_c).
@@ -59,10 +58,10 @@ classes:
       name:
         description: Human-readable metabolite name.
       formula:
-        description: Chemical formula for tracked elements.
+        description: Chemical formula of the metabolite.
         slot_uri: fluxo:FLUXO_0000199
       charge:
-        description: Molecular charge.
+        description: Metabolite's molecular charge.
         slot_uri: fluxo:FLUXO_0000200
         range: integer
       compartment:
@@ -161,8 +160,9 @@ classes:
         required: true
 
   AtomTransitionVariant:
+    class_uri: fluxo:FLUXO_0000224
     description: >-
-      A variant of atom transitions for a reaction. Reactions involving
+      A variant of atom transitions for a reaction. E.g.reactions involving
       symmetric compounds have multiple variants because the atom mapping
       is ambiguous.
     attributes:

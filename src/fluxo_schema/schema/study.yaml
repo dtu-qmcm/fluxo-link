@@ -2,7 +2,7 @@ id: https://w3id.org/fluxo/schema/study
 name: fluxo-study
 title: FLUXO Study Module
 description: >-
-  Study-level provenance classes for 13C-MFA investigations, including
+  Study-level provenance classes for I-MFA investigations, including
   contributors, organism information, and publication metadata.
 
 license: MIT
@@ -23,7 +23,7 @@ classes:
   Study:
     class_uri: fluxo:FLUXO_0000162
     description: >-
-      A fluxomics investigation comprising one or more 13C-MFA simulation
+      A fluxomics investigation comprising one or more I-MFA simulation
       studies, their experimental data, metabolic models, and results.
     attributes:
       id:
