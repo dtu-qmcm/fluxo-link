@@ -9,7 +9,7 @@ license: MIT
 
 prefixes:
   linkml: https://w3id.org/linkml/
-  fluxo: http://purl.obolibrary.org/obo/FLUXO_
+  fluxo: http://purl.obolibrary.org/obo/
 
 default_prefix: fluxo
 default_range: string
@@ -17,28 +17,49 @@ default_range: string
 imports:
   - linkml:types
   - enumerations
+  - investigation
+  - network
+  - experiment
 
 classes:
   SimulationRun:
+    class_uri: fluxo:FLUXO_0000057
     description: >-
-      A single simulation run linking a study, network model, and
-      experiment to a specific software tool and its results.
+      A single simulation run linking an investigation, network model,
+      and experiment to a specific software tool and its results.
     attributes:
       id:
         description: Unique identifier for the simulation run.
         identifier: true
         required: true
-      study_id:
-        description: Reference to the parent study.
+      investigation_id:
+        description: Reference to the parent investigation.
+        range: Investigation
         required: true
       network_model_id:
         description: >-
           Reference to the metabolic network model used.
+        range: MetabolicNetworkModel
         required: true
       experiment_id:
         description: >-
-          Reference to the labeling experiment used.
+          Reference(s) to the labeling experiment(s) used. Singular for
+          single-labeling-experiment MFA; multivalued (2+) for parallel
+          labeling experiments (PLE) jointly fit to one shared flux
+          solution. Optional for non-isotope methods (e.g., FBA).
+        range: LabelingExperiment
+        multivalued: true
+      mfa_method:
+        description: The MFA method used in this simulation run.
+        range: MFAMethodEnum
         required: true
+      condition:
+        description: >-
+          Biological context for this run. Useful for FBA (which has no
+          experiment); optional for isotope-based MFA where the condition
+          is carried on the experiment.
+        range: Condition
+        inlined: true
       software:
         description: Software tool and version used for this run.
         range: SoftwareInfo
@@ -48,14 +69,50 @@ classes:
         description: File format of the input data.
         slot_uri: fluxo:FLUXO_0000229
         range: InputFormatEnum
+      input_format_other:
+        description: >-
+          Free-text input format, used when input_format is "other".
       optimization_method:
         description: >-
           Optimization method used (e.g., Levenberg-Marquardt, BFGS).
+        slot_uri: fluxo:FLUXO_0000088
+        required: true
+      objective_function:
+        description: >-
+          Mathematical expression for the objective function being
+          optimized (e.g., "maximize biomass" for FBA). May be empty for
+          isotope-based MFA where the objective is implicit (minimize
+          WSSR).
+        slot_uri: fluxo:FLUXO_0000223
+      multistart_count:
+        description: >-
+          Number of optimization restarts (for non-convex problems).
+        range: integer
+        minimum_value: 1
+      random_seed:
+        description: >-
+          Random seed for reproducibility of stochastic optimizers.
+        range: integer
+      convergence_tolerance:
+        description: Solver convergence tolerance (e.g., 1e-6).
+        range: float
       isotopic_state_space:
         description: >-
           Isotopic state-space representation used for computation.
         slot_uri: fluxo:FLUXO_0000146
         range: IsotopicStateSpaceEnum
+      stop_time:
+        description: >-
+          Simulation stop time for non-stationary (INST) MFA.
+        range: float
+      initial_values:
+        description: >-
+          Initial flux (and pool size) values for warm-starting the
+          optimizer. Required in practice for isotope-based MFA
+          (INCA/influx_si); optional for FBA. The conditional rule is
+          deferred to Phase 5.
+        range: FluxSolution
+        inlined: true
       flux_solution:
         description: Estimated flux values from the simulation.
         range: FluxSolution
@@ -78,9 +135,13 @@ classes:
         description: Name of the MFA software.
         range: MFASoftwareEnum
         required: true
+      software_name_other:
+        description: >-
+          Free-text software name, used when software_name is "other".
       version:
         description: Version of the software.
         slot_uri: fluxo:FLUXO_0000243
+        required: true
       url:
         description: URL to the software repository or documentation.
         range: uriorcurie
@@ -105,6 +166,16 @@ classes:
         range: PoolSizeResult
         multivalued: true
         inlined_as_list: true
+      simulated_mids:
+        description: >-
+          Simulated MID values predicted by the model, for comparison
+          against measured MIDs (measured-vs-fitted plots, WSSR
+          re-derivation). Present when the solver exposes
+          forward-simulation output. Reuses the MIDMeasurement structure
+          with standard_deviation left unpopulated.
+        range: MIDMeasurement
+        multivalued: true
+        inlined_as_list: true
 
   FluxResult:
     class_uri: fluxo:FLUXO_0000123
@@ -114,6 +185,7 @@ classes:
     attributes:
       reaction_id:
         description: Reference to the reaction in the network model.
+        range: NetworkReaction
         required: true
       flux_type:
         description: Type of flux (net, forward, backward, exchange).
@@ -121,15 +193,16 @@ classes:
         required: true
       value:
         description: Estimated flux value.
+        slot_uri: fluxo:FLUXO_0000236
         range: float
         required: true
       lower_ci:
         description: Lower bound of the confidence interval.
-        slot_uri: fluxo:FLUXO_0000209
+        slot_uri: fluxo:FLUXO_0000262
         range: float
       upper_ci:
         description: Upper bound of the confidence interval.
-        slot_uri: fluxo:FLUXO_0000209
+        slot_uri: fluxo:FLUXO_0000263
         range: float
       standard_deviation:
         description: Standard deviation of the flux estimate.
@@ -138,13 +211,20 @@ classes:
       flux_unit:
         description: Unit of the flux value (e.g., mmol/gDW/h).
         slot_uri: fluxo:FLUXO_0000219
+      confidence_interval_method:
+        description: >-
+          Method used to compute the confidence interval (profile
+          likelihood, parameter continuation, bootstrap, grid search).
+        range: ConfidenceIntervalMethodEnum
 
   PoolSizeResult:
+    class_uri: fluxo:FLUXO_0000062
     description: >-
       An estimated metabolite pool size from the flux solution.
     attributes:
       metabolite_id:
         description: Reference to the metabolite in the network model.
+        range: NetworkMetabolite
         required: true
       value:
         description: Estimated pool size value.
@@ -153,18 +233,27 @@ classes:
         required: true
       lower_ci:
         description: Lower bound of the confidence interval.
+        slot_uri: fluxo:FLUXO_0000262
         range: float
       upper_ci:
         description: Upper bound of the confidence interval.
+        slot_uri: fluxo:FLUXO_0000263
         range: float
       standard_deviation:
         description: Standard deviation of the pool size estimate.
+        slot_uri: fluxo:FLUXO_0000208
         range: float
       pool_size_unit:
         description: Unit of the pool size (e.g., mmol/gDW).
         slot_uri: fluxo:FLUXO_0000222
+      confidence_interval_method:
+        description: >-
+          Method used to compute the confidence interval (profile
+          likelihood, parameter continuation, bootstrap, grid search).
+        range: ConfidenceIntervalMethodEnum
 
   GoodnessOfFit:
+    class_uri: fluxo:FLUXO_0000212
     description: >-
       Statistical measures of how well the flux solution fits the
       experimental data.
@@ -176,6 +265,7 @@ classes:
         range: float
       degrees_of_freedom:
         description: Degrees of freedom in the fit.
+        slot_uri: fluxo:FLUXO_0000030
         range: integer
       chi_square_p_value:
         description: >-
@@ -185,7 +275,5 @@ classes:
       reduced_chi_square:
         description: >-
           Reduced chi-square statistic (WSSR / degrees of freedom).
+        slot_uri: fluxo:FLUXO_0000237
         range: float
-      assessment:
-        description: Overall assessment of the fit quality.
-        range: GoodnessAssessmentEnum

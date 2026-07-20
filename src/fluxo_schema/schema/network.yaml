@@ -9,7 +9,7 @@ license: MIT
 
 prefixes:
   linkml: https://w3id.org/linkml/
-  fluxo: http://purl.obolibrary.org/obo/FLUXO_
+  fluxo: http://purl.obolibrary.org/obo/
 
 default_prefix: fluxo
 default_range: string
@@ -20,7 +20,7 @@ imports:
 
 classes:
   MetabolicNetworkModel:
-    class_uri: fluxo:FLUXO_0000057
+    class_uri: fluxo:FLUXO_0000127
     description: >-
       A computational representation of a metabolic network, including
       metabolites, reactions, compartments, and atom transitions.
@@ -40,9 +40,26 @@ classes:
         range: NetworkMetabolite
         multivalued: true
         inlined_as_list: true
+        required: true
+        minimum_cardinality: 1
       reactions:
         description: Reaction definitions in the network.
         range: NetworkReaction
+        multivalued: true
+        inlined_as_list: true
+        required: true
+        minimum_cardinality: 1
+      flux_constraints:
+        description: >-
+          Constraints on reaction flux values (bounds, equalities,
+          linear-combination constraints).
+        range: FluxConstraint
+        multivalued: true
+        inlined_as_list: true
+      pool_size_constraints:
+        description: >-
+          Constraints on metabolite pool size values.
+        range: PoolSizeConstraint
         multivalued: true
         inlined_as_list: true
 
@@ -71,6 +88,7 @@ classes:
         description: >-
           Number of atoms of the tracer element in this metabolite
           (e.g., 6 for carbons in glucose).
+        slot_uri: fluxo:FLUXO_0000183
         range: integer
         minimum_value: 0
       inchi:
@@ -109,23 +127,36 @@ classes:
         description: The type of reaction.
         range: ReactionTypeEnum
       substrates:
-        description: Substrate (educt) participants.
+        description: Substrate (educt) participants consumed by the reaction.
         range: ReactionParticipant
         multivalued: true
         inlined_as_list: true
+        required: true
+        minimum_cardinality: 1
       products:
-        description: Product participants.
+        description: >-
+          Product participants produced by the reaction. Recommended
+          rather than strictly required because boundary reactions
+          (sink, demand) legitimately have no products; a conditional
+          rule (required unless boundary reaction) is deferred to Phase 5.
         range: ReactionParticipant
         multivalued: true
         inlined_as_list: true
+        recommended: true
       atom_transition_variants:
         description: >-
           Atom transition variants for this reaction. Multiple variants
           exist when symmetric compounds create ambiguity in atom
-          transitions.
+          transitions. Recommended rather than required: isotope-based
+          MFA requires transitions for reactions among carbon-tracked
+          metabolites, but stoichiometry-based methods (FBA) and
+          reactions among untracked metabolites have none. The
+          conditional rule (required when n_tracked_atoms > 0) is
+          deferred to Phase 5.
         range: AtomTransitionVariant
         multivalued: true
         inlined_as_list: true
+        recommended: true
       is_lumped:
         description: >-
           Whether this is a lumped reaction combining multiple steps.
@@ -140,6 +171,7 @@ classes:
         ifabsent: false
 
   ReactionParticipant:
+    class_uri: fluxo:FLUXO_0000185
     description: >-
       A metabolite participating in a reaction with a specific
       stoichiometric coefficient.
@@ -147,22 +179,21 @@ classes:
       metabolite_id:
         description: >-
           Reference to the metabolite identifier in the network model.
+        range: NetworkMetabolite
         required: true
       stoichiometry:
         description: >-
-          Stoichiometric coefficient (absolute value).
+          Stoichiometric coefficient (absolute value). The participant's
+          role (substrate vs product) is determined by which list it
+          appears in on NetworkReaction.
         slot_uri: fluxo:FLUXO_0000205
         range: float
         ifabsent: float(1.0)
-      role:
-        description: Whether this participant is a substrate or product.
-        range: ParticipantRoleEnum
-        required: true
 
   AtomTransitionVariant:
     class_uri: fluxo:FLUXO_0000224
     description: >-
-      A variant of atom transitions for a reaction. E.g.reactions involving
+      A variant of atom transitions for a reaction. E.g. reactions involving
       symmetric compounds have multiple variants because the atom mapping
       is ambiguous.
     attributes:
@@ -170,6 +201,15 @@ classes:
         description: >-
           Identifier for this variant (e.g., "SCS___1", "SCS___2").
         required: true
+      ratio:
+        description: >-
+          Likelihood (0.0-1.0) of this atom-transition variant, used for
+          scrambling reactions where symmetric compounds make the atom
+          mapping ambiguous. Should sum to 1.0 across all variants of a
+          reaction.
+        range: float
+        minimum_value: 0.0
+        maximum_value: 1.0
       transitions:
         description: Individual atom-to-atom transition mappings.
         range: AtomTransition
@@ -186,6 +226,7 @@ classes:
         description: >-
           Identifier of the substrate metabolite containing the source
           atom.
+        range: NetworkMetabolite
         required: true
       substrate_atom_index:
         description: >-
@@ -199,6 +240,7 @@ classes:
         description: >-
           Identifier of the product metabolite containing the destination
           atom.
+        range: NetworkMetabolite
         required: true
       product_atom_index:
         description: >-
@@ -224,6 +266,7 @@ classes:
       reaction_id:
         description: >-
           Reference to the reaction this constraint applies to.
+        range: NetworkReaction
         required: true
       constraint_type:
         description: The type of constraint.
@@ -234,6 +277,39 @@ classes:
         range: float
       upper_bound:
         description: Upper bound for the flux value.
+        range: float
+      fixed_value:
+        description: Fixed value for equality constraints.
+        range: float
+      expression:
+        description: >-
+          Mathematical expression for linear combination constraints.
+        slot_uri: fluxo:FLUXO_0000223
+
+  PoolSizeConstraint:
+    description: >-
+      A constraint on metabolite pool size values in the network model.
+      Parallel to FluxConstraint but applies to a metabolite rather than
+      a reaction.
+    attributes:
+      id:
+        description: Unique identifier for the constraint.
+        identifier: true
+        required: true
+      metabolite_id:
+        description: >-
+          Reference to the metabolite this constraint applies to.
+        range: NetworkMetabolite
+        required: true
+      constraint_type:
+        description: The type of constraint.
+        range: ConstraintTypeEnum
+        required: true
+      lower_bound:
+        description: Lower bound for the pool size value.
+        range: float
+      upper_bound:
+        description: Upper bound for the pool size value.
         range: float
       fixed_value:
         description: Fixed value for equality constraints.

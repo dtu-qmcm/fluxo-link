@@ -1,15 +1,16 @@
-id: https://w3id.org/fluxo/schema/study
-name: fluxo-study
-title: FLUXO Study Module
+id: https://w3id.org/fluxo/schema/investigation
+name: fluxo-investigation
+title: FLUXO Investigation Module
 description: >-
-  Study-level provenance classes for I-MFA investigations, including
-  contributors, organism information, and publication metadata.
+  Investigation-level provenance classes for fluxomics investigations,
+  including contributors, cultivation conditions, and publication
+  metadata.
 
 license: MIT
 
 prefixes:
   linkml: https://w3id.org/linkml/
-  fluxo: http://purl.obolibrary.org/obo/FLUXO_
+  fluxo: http://purl.obolibrary.org/obo/
   schema: http://schema.org/
 
 default_prefix: fluxo
@@ -20,36 +21,29 @@ imports:
   - enumerations
 
 classes:
-  Study:
+  Investigation:
     class_uri: fluxo:FLUXO_0000162
     description: >-
-      A fluxomics investigation comprising one or more I-MFA simulation
-      studies, their experimental data, metabolic models, and results.
+      A fluxomics investigation comprising one or more isotope labeling
+      experiments or simulation studies.
     attributes:
       id:
-        description: Unique identifier for the study.
+        description: Unique identifier for the investigation.
         identifier: true
         required: true
       name:
-        description: Human-readable name of the study.
+        description: Human-readable name of the investigation.
         required: true
       description:
-        description: Detailed description of the study.
+        description: Detailed description of the investigation.
       publication_doi:
         description: DOI of the associated publication.
         range: uriorcurie
       contributors:
-        description: List of contributors to this study.
+        description: List of contributors to this investigation.
         range: Contributor
         multivalued: true
         inlined_as_list: true
-      organism:
-        description: Organism and strain information.
-        range: OrganismInfo
-        inlined: true
-      study_type:
-        description: The MFA method used in this study.
-        range: MFAMethodEnum
 
   Contributor:
     class_uri: fluxo:FLUXO_0000253
@@ -75,15 +69,18 @@ classes:
         description: Affiliated organization.
         slot_uri: fluxo:FLUXO_0000258
 
-  OrganismInfo:
+  Condition:
+    class_uri: fluxo:FLUXO_0000218
     description: >-
-      Organism and cultivation information for the biological system
-      under study.
+      Cultivation conditions for the biological system under study,
+      including organism, strain, culture medium, and growth rate.
     attributes:
       id:
-        description: Unique identifier for the organism info record.
+        description: Unique identifier for the condition record.
         identifier: true
         required: true
+      name:
+        description: Human-readable name for this condition.
       organism_name:
         description: Name of the organism (e.g., Escherichia coli).
         slot_uri: fluxo:FLUXO_0000181
@@ -91,6 +88,7 @@ classes:
       strain:
         description: Strain designation (e.g., BW25113).
         slot_uri: fluxo:FLUXO_0000182
+        required: true
       culture_medium:
         description: Growth medium used for cultivation.
         slot_uri: fluxo:FLUXO_0000184
@@ -99,6 +97,25 @@ classes:
           Measured specific growth rate of the organism.
         slot_uri: fluxo:FLUXO_0000084
         range: float
+        required: true
       growth_rate_unit:
         description: Unit for the growth rate (e.g., 1/h).
         slot_uri: fluxo:FLUXO_0000219
+        required: true
+      aeration:
+        description: Aeration status of the cultivation.
+        range: AerationEnum
+      temperature:
+        description: Cultivation temperature in degrees Celsius.
+        range: float
+      ph:
+        description: Culture pH.
+        range: float
+      cultivation_mode:
+        description: >-
+          Cultivation mode (batch, fed-batch, chemostat, continuous).
+        range: CultivationModeEnum
+      genotype:
+        description: >-
+          Genetic modifications relative to wild type (e.g., "delta-pgi",
+          "overexpress glk").

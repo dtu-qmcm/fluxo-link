@@ -29,11 +29,11 @@ class TestSchemaLoading:
         assert "enums" in data
         assert "MFASoftwareEnum" in data["enums"]
 
-    def test_study_schema_loads(self) -> None:
-        """Test that the study schema loads."""
-        data = _load_yaml("study.yaml")
+    def test_investigation_schema_loads(self) -> None:
+        """Test that the investigation schema loads."""
+        data = _load_yaml("investigation.yaml")
         assert "classes" in data
-        assert "Study" in data["classes"]
+        assert "Investigation" in data["classes"]
 
     def test_network_schema_loads(self) -> None:
         """Test that the network schema loads."""
@@ -86,11 +86,11 @@ class TestEnumerations:
 class TestOntologyMapping:
     """Tests that classes have correct ontology mappings."""
 
-    def test_study_has_class_uri(self) -> None:
-        """Test that Study class maps to FLUXO_0000162."""
-        data = _load_yaml("study.yaml")
-        study = data["classes"]["Study"]
-        assert study.get("class_uri") == "fluxo:FLUXO_0000162"
+    def test_investigation_has_class_uri(self) -> None:
+        """Test that Investigation class maps to FLUXO_0000162."""
+        data = _load_yaml("investigation.yaml")
+        investigation = data["classes"]["Investigation"]
+        assert investigation.get("class_uri") == "fluxo:FLUXO_0000162"
 
     def test_metabolite_has_class_uri(self) -> None:
         """Test that NetworkMetabolite maps to FLUXO_0000172."""

@@ -2,18 +2,18 @@ id: https://w3id.org/fluxo/schema
 name: fluxo-schema
 title: FLUXO Schema
 description: >-
-  A LinkML data model for 13C-MFA simulation studies, grounded in the
-  FLUXO (Metabolic Flux Analysis) ontology. Provides a structured,
-  ontology-compliant schema for curating experimental data, metabolic
-  network models, simulation parameters, and flux solutions from tools
-  such as freeflux, 13CFLUX2, influx_si, and INCA.
+  A LinkML data model for metabolic flux analysis (MFA) investigations,
+  including isotope-based MFA (13C-MFA, IST-MFA, INST-MFA) and
+  stoichiometry-based methods (FBA). Grounded in the FLUXO ontology.
+  Supports data from tools such as freeflux, 13CFLUX2, influx_si, INCA,
+  COBRApy, and others.
 
 license: MIT
 version: 0.1.0
 
 prefixes:
   linkml: https://w3id.org/linkml/
-  fluxo: http://purl.obolibrary.org/obo/FLUXO_
+  fluxo: http://purl.obolibrary.org/obo/
   obo: http://purl.obolibrary.org/obo/
   schema: http://schema.org/
   ORCID: https://orcid.org/
@@ -24,7 +24,56 @@ default_range: string
 imports:
   - linkml:types
   - enumerations
-  - study
+  - investigation
   - network
   - experiment
   - simulation_run
+
+classes:
+  FluxoDataset:
+    class_uri: fluxo:FLUXO_0000002
+    tree_root: true
+    description: >-
+      Root container aggregating all studies, networks, experiments,
+      and simulation runs in a fluxomics dataset.
+    attributes:
+      id:
+        description: Unique identifier for this dataset.
+        identifier: true
+        required: true
+      name:
+        description: Human-readable name of the dataset.
+      description:
+        description: Detailed description of the dataset contents.
+      schema_version:
+        description: Version of the FLUXO schema this dataset conforms to.
+      creation_date:
+        description: Date the dataset was created.
+        range: date
+      last_modified:
+        description: Date the dataset was last modified.
+        range: date
+      fluxo_ontology_version:
+        description: >-
+          FLUXO ontology release version used for term mappings (e.g.,
+          "2026-04-08"). Pins the ontology version for traceability.
+      investigations:
+        description: All investigations in this dataset.
+        range: Investigation
+        multivalued: true
+        inlined_as_list: true
+      networks:
+        description: All metabolic network models in this dataset.
+        range: MetabolicNetworkModel
+        multivalued: true
+        inlined_as_list: true
+      experiments:
+        description: All labeling experiments in this dataset.
+        range: LabelingExperiment
+        multivalued: true
+        inlined_as_list: true
+      simulation_runs:
+        description: All simulation runs in this dataset.
+        range: SimulationRun
+        multivalued: true
+        inlined_as_list: true

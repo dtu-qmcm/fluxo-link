@@ -9,7 +9,7 @@ license: MIT
 
 prefixes:
   linkml: https://w3id.org/linkml/
-  fluxo: http://purl.obolibrary.org/obo/FLUXO_
+  fluxo: http://purl.obolibrary.org/obo/
 
 default_prefix: fluxo
 default_range: string
@@ -44,10 +44,20 @@ enums:
       BayFlux:
         description: BayFlux - Bayesian flux estimation
         meaning: fluxo:FLUXO_0000120
+      COBRApy:
+        description: COBRApy - Python package for constraint-based modeling (FBA)
+      cameo:
+        description: cameo - Python platform for metabolic engineering design
+      other:
+        description: >-
+          Other software not listed; specify via the companion
+          software_name_other free-text slot.
 
   MFAMethodEnum:
     description: >-
       Metabolic flux analysis method types from the FLUXO ontology.
+      Covers both isotope-based methods (IST/INST/dynamic/13C) and
+      stoichiometry-based methods (FBA, constraint-based).
     permissible_values:
       IST_MFA:
         description: Isotopically stationary MFA
@@ -58,6 +68,26 @@ enums:
       dynamic_MFA:
         description: Dynamic isotope-based MFA
         meaning: fluxo:FLUXO_0000045
+      MFA:
+        description: Generic metabolic flux analysis
+        meaning: fluxo:FLUXO_0000040
+      I_MFA:
+        description: >-
+          Isotope-based metabolic flux analysis (parent of 13C-MFA,
+          IST-MFA, INST-MFA)
+        meaning: fluxo:FLUXO_0000041
+      C13_MFA:
+        description: 13C metabolic flux analysis
+        meaning: fluxo:FLUXO_0000042
+      FBA:
+        description: Flux balance analysis (stoichiometry-based, no isotope)
+        meaning: fluxo:FLUXO_0000039
+      stoichiometry_based_MFA:
+        description: Stoichiometry-based MFA (parent of FBA, constraint-based)
+        meaning: fluxo:FLUXO_0000018
+      constraint_based_MFA:
+        description: Constraint-based MFA (FBA variant with additional constraints)
+        meaning: fluxo:FLUXO_0000019
 
   InputFormatEnum:
     description: >-
@@ -78,6 +108,10 @@ enums:
       INCA_mat:
         description: INCA MATLAB .mat format
         meaning: fluxo:FLUXO_0000231
+      other:
+        description: >-
+          Other input format not listed; specify via the companion
+          input_format_other free-text slot.
 
   IsotopicStateSpaceEnum:
     description: >-
@@ -112,6 +146,16 @@ enums:
       NMR:
         description: Nuclear magnetic resonance
         meaning: fluxo:FLUXO_0000195
+      NMR_1D_13C:
+        description: 1D 13C NMR spectroscopy
+      NMR_2D_HSQC:
+        description: 2D 1H-13C HSQC NMR
+      NMR_2D_TOCSY:
+        description: 2D TOCSY NMR
+      other:
+        description: >-
+          Other analytical method not listed; specify via the companion
+          analytical_method_other free-text slot.
 
   FluxTypeEnum:
     description: >-
@@ -181,33 +225,6 @@ enums:
         description: Individual flux bound (lower/upper)
         meaning: fluxo:FLUXO_0000206
 
-  ExperimentTypeEnum:
-    description: >-
-      Types of isotope labeling experiments.
-    permissible_values:
-      isotopic_steady_state:
-        description: Isotopically steady-state labeling experiment
-        meaning: fluxo:FLUXO_0000179
-      isotopic_non_stationary:
-        description: >-
-          Isotopically non-stationary (transient) labeling experiment
-        meaning: fluxo:FLUXO_0000180
-
-  MeasurementTypeEnum:
-    description: >-
-      Types of measurements in a labeling experiment.
-    permissible_values:
-      MID:
-        description: >-
-          Mass isotopologue distribution (also called MDV or ID)
-        meaning: fluxo:FLUXO_0000143
-      flux:
-        description: Measured external flux
-        meaning: fluxo:FLUXO_0000124
-      pool_size:
-        description: Metabolite pool size measurement
-        meaning: fluxo:FLUXO_0000062
-
   ScaleMethodEnum:
     description: >-
       Scaling methods for measurement groups.
@@ -217,24 +234,44 @@ enums:
       one:
         description: Scale to one
 
-  GoodnessAssessmentEnum:
+  AerationEnum:
     description: >-
-      Assessment of goodness-of-fit for a flux solution.
+      Aeration/oxygenation status of the cultivation. No FLUXO terms;
+      left unmapped.
     permissible_values:
-      accepted:
-        description: Fit passes chi-square test (p > 0.05)
-      borderline:
-        description: Fit is borderline (0.01 < p < 0.05)
-      rejected:
-        description: Fit fails chi-square test (p < 0.01)
+      aerobic:
+        description: Fully aerated cultivation
+      microaerobic:
+        description: Oxygen-limited cultivation
+      anaerobic:
+        description: Cultivation without oxygen
 
-  ParticipantRoleEnum:
+  CultivationModeEnum:
     description: >-
-      Role of a metabolite in a reaction.
+      Cultivation mode of the bioreactor/culture. No FLUXO terms;
+      left unmapped.
     permissible_values:
-      substrate:
-        description: Substrate (educt, consumed)
-        meaning: fluxo:FLUXO_0000168
-      product:
-        description: Product (produced)
-        meaning: fluxo:FLUXO_0000169
+      batch:
+        description: Batch cultivation
+      fed_batch:
+        description: Fed-batch cultivation
+      chemostat:
+        description: Chemostat (continuous, controlled dilution rate)
+      continuous:
+        description: Continuous cultivation (general)
+
+  ConfidenceIntervalMethodEnum:
+    description: >-
+      Method used to compute confidence intervals on estimated fluxes or
+      pool sizes. No FLUXO terms; left unmapped.
+    permissible_values:
+      profile_likelihood:
+        description: Profile-likelihood / parameter continuation
+      parameter_continuation:
+        description: Parameter continuation (sensitivity-based)
+      bootstrap:
+        description: Monte Carlo bootstrap resampling
+      grid_search:
+        description: Grid search over parameter space
+      other:
+        description: Other method not listed
