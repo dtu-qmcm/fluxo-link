@@ -1,6 +1,6 @@
 # FLUXO Schema
 
-A LinkML data model for metabolic flux analysis (MFA) investigations, grounded in the [FLUXO ontology](https://purl.obolibrary.org/obo/fluxo/).
+A LinkML data model for metabolic flux analysis (MFA) investigations, grounded in the [FLUXO ontology](https://github.com/dtu-qmcm/fluxo).
 
 ## Overview
 
@@ -9,7 +9,7 @@ FLUXO Schema provides a structured, ontology-compliant schema for curating exper
 ## Architecture
 
 ```
-FLUXO Ontology (semantics) → LinkML Schema (structure) → fluxomics_converter (computation)
+FLUXO Ontology (semantics) → LinkML Schema (structure) → fluxomics_data_converter (translation) → fluxomics softwares (computation)
 ```
 
 The LinkML schema serves as the interface layer between the ontology (what concepts mean) and the computation library (what data does).
