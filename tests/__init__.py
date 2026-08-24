@@ -1,1 +1,1 @@
-"""Tests for FLUXO Schema."""
+"""Tests for FluxoLink."""

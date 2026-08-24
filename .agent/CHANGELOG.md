@@ -1,4 +1,4 @@
-# CHANGELOG — FLUXO Schema
+# CHANGELOG — FluxoLink
 
 Project change log. Updated by the AI agent as changes are made.
 
@@ -12,7 +12,7 @@ Project change log. Updated by the AI agent as changes are made.
 
 - Established project repository with LinkML schema backbone
 - Created 6 schema modules totaling 974 lines:
-  - `fluxo_schema.yaml` — Main schema (30 lines)
+  - `fluxolink.yaml` — Main schema (30 lines)
   - `enumerations.yaml` — FLUXO ontology-backed enums (240 lines)
   - `study.yaml` — Study provenance (104 lines)
   - `network.yaml` — Metabolic network model (244 lines)
@@ -70,7 +70,7 @@ Project change log. Updated by the AI agent as changes are made.
 
 | Commit | Message |
 |---|---|
-| `25b8581` | fix defintions and add ontology links |
+| `25b8581` | fix definitions and add ontology links |
 | `8b020b8` | update agent files |
 | `78b0410` | Remove no-commit-to-branch hook from pre-commit |
 | `e4cae2d` | Initial project setup with LinkML schema backbone |
@@ -285,6 +285,61 @@ Reversed the Phase 3p `reactants` → `substrates` rename, and extended `substra
 **Rationale:** the FLUXO ontology's own participant roles are `FLUXO_0000167` **"reactant role"** and `FLUXO_0000169` **"product role"** (reactant/product, not substrate/product); the pairing is linguistically symmetric with `products`; and it matches the `reactants`/`products` naming already used by the `fluxomics_data_converter`, removing a field-name mismatch at the interchange boundary.
 
 `LabeledSource`'s "labeled substrate (tracer mixture)" description was intentionally left unchanged — there "substrate" means the labeled feedstock fed to the cell, not a stoichiometric reaction participant. Examples and the generated datamodel were updated; 16/16 tests pass, both example datasets still validate.
+
+---
+
+## PATH_FORWARD — Architecture & Ground-Truth Decisions (2026-07-22)
+
+`analysis` `plan` `architecture` `integration` `benchmarking`
+
+Extended discussion on cross-tool benchmarking produced `PATH_FORWARD.md` and synced plan changes. **No schema (YAML) changes — planning documents only.**
+
+### Architecture question: how deep should the schema go?
+
+- Analyzed three paths: **A** (full parsed model, 29 classes), **B** (investigation catalog + results, ~10 classes), **C** (hybrid: parsed results, file references for inputs).
+- Initially chose Path C, then **amended it**: a benchmark's *input* ground truth must be declared and validated — a file reference asserts provenance, not equivalence across the 4 tools' files.
+- **Final decision — two-tier schema:** Tier 1 (provenance + results) required for all datasets; Tier 2 (input content — the Phase-3 classes) required for `benchmark` datasets, optional for `catalog` datasets. Optionality, not deletion, keeps catalog datasets light.
+
+### Ground-truth holder: the LinkML dataset, not the converter
+
+- Three-layer framing adopted: FLUXO ontology = *semantic* truth; LinkML schema = *information* truth; converter = *application* truth. A ground truth is an information artifact → the `FluxoDataset` holds it; the converter translates and validates (hydration adapter + equivalence diff + file generation).
+- External precedents checked: ISA-JSON (pure manifest), SED-ML (reference + patch, stores no results), NMDC `DataObject` (LinkML-native file reference + `has_input`/`has_output`). Tier-1 design follows them; storing parsed results is the deliberate divergence — no stable cross-tool results format exists.
+- Comparison-location decision: input-side structural comparison lives in the converter; results benchmarking is a query over `FluxResult`s by canonical `reaction_id`, not a converter responsibility.
+
+### New planning actions (IMPLEMENTATION_PLAN.md)
+
+- **Phase 3s** (schema additions): `SourceFile` + `FileRoleEnum`; `source_files` on `FluxoDataset`; `input_files`/`output_files` on `SimulationRun`; `aliases` (tool-namespaced, e.g. `"influx_si:v5"`) on `NetworkReaction`/`NetworkMetabolite` — canonical↔native ID mapping is new information present in no native file; `isotopic_state_space` re-added (benchmarking-fairness parameter); `replicate` on the 3 measurement classes; `tracer_summary`; `dataset_type` (benchmark/catalog) for two-tier enforcement.
+- **Phase 5i** (validation): Tier-1 rules (checksum pattern, exactly one `role=network` file per run, benchmark⇒Tier-2 rule) + results-layer rules (CI ordering, alias format).
+- **Phase 7** (integration): hydration adapter (`FluxoDataset` ↔ `FluxomicsData`), equivalence diff, results extraction (only influx_si `.tvar` exists today — 13CFLUX2/INCA/FreeFlux/miemu all new), metadata sidecar (`--meta` required for MTF/FreeFlux/INCA — no native format carries `Condition`/`Investigation` metadata; FluxML `<info>` partially excepted), CLI (`fluxo ingest`/`validate`/`compare`), EC benchmark end-to-end.
+- **VALIDATION_REQUIREMENTS.md** synced: tier framing + new §5 (Tier-1/results-layer rules); stale `Study`→`Investigation` references fixed.
+
+### Scope-decision reversals (vs. 2026-07-20 entry)
+
+- **Replicate structure**: previously deferred → now **planned** (`replicate` slot, Phase 3s) — miemu and published datasets carry replicates.
+- **Raw file provenance**: previously out of scope → now **in scope** as the `SourceFile` Tier-1 layer (provenance, not content duplication).
+- **Dataset as simulation input**: deprioritized — simulators read native files via the converter; the dataset is not a solver input format.
+- **miemu integration**: reframed as results *producer* (`FitResults` → `SimulationRun`); stationary-only; no χ² yet (`chi_square_p_value` left empty).
+
+---
+
+## Project Renamed: fluxo-schema → FluxoLink (2026-08-18)
+
+`changed` `rename` `project-identity`
+
+The project was renamed from **fluxo-schema** to **FluxoLink** — "fluxomics data model" is more representative of the work than "fluxo schema".
+
+### What changed
+
+- **Package/dist name:** `fluxo-schema` → `fluxolink` (`pyproject.toml`, `uv.lock` refreshed).
+- **Python package:** `src/fluxo_schema/` → `src/fluxolink/` (`from fluxolink.datamodel.fluxolink import ...`).
+- **Main schema file:** `fluxo_schema.yaml` → `fluxolink.yaml`; schema `name: fluxo-schema` → `fluxolink`; `title: FLUXO Schema` → `FluxoLink`.
+- **Schema namespace URIs:** `https://w3id.org/fluxo/schema*` → `https://w3id.org/fluxolink*` (all 6 modules); submodule `name:` fields `fluxo-*` → `fluxolink-*`.
+- **Tooling/docs:** justfile, config.yaml, pre-commit hooks, yamllint, CI workflow, freshness script, tests, README, AGENTS.md updated; Pydantic datamodel regenerated.
+
+### What did NOT change
+
+- LinkML template directory structure (`src/<pkg>/schema/`, `src/<pkg>/datamodel/`).
+- **FLUXO ontology grounding:** the `fluxo:` prefix (`http://purl.obolibrary.org/obo/`), all `class_uri`/`slot_uri`/`meaning` mappings, `fluxo_ontology_version`, and the `FluxoDataset` class name.
 
 ---
 

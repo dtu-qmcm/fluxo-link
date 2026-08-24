@@ -15,7 +15,7 @@ import pytest
 
 BIN = Path(sys.executable).parent
 VALIDATE = BIN / "linkml-validate"
-SCHEMA = Path(__file__).parent.parent / "src" / "fluxo_schema" / "schema" / "fluxo_schema.yaml"
+SCHEMA = Path(__file__).parent.parent / "src" / "fluxolink" / "schema" / "fluxolink.yaml"
 EXAMPLES = Path(__file__).parent.parent / "examples"
 
 

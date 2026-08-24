@@ -1,10 +1,10 @@
-# AGENT.md — FLUXO Schema Project
+# AGENT.md — FluxoLink Project
 
 This file describes the project conventions, tools, and workflow for AI coding agents working on this repository.
 
 ## Project Identity
 
-- **Name:** `fluxo-schema`
+- **Name:** `fluxolink`
 - **Description:** LinkML data model for 13C-MFA simulation studies, grounded in the [FLUXO ontology](https://purl.obolibrary.org/obo/fluxo/)
 - **Version:** 0.1.0 (Pre-Alpha)
 - **License:** Apache 2.0
@@ -21,10 +21,10 @@ This repo is the **LinkML Schema layer**. It defines the data model in YAML; the
 ## Directory Structure
 
 ```
-src/fluxo_schema/
+src/fluxolink/
 ├── __init__.py
 ├── schema/                  # LinkML YAML schema definitions
-│   ├── fluxo_schema.yaml    # Main schema (imports the rest) + FluxoDataset root container
+│   ├── fluxolink.yaml    # Main schema (imports the rest) + FluxoDataset root container
 │   ├── enumerations.yaml    # Semantic enums backed by FLUXO ontology terms
 │   ├── investigation.yaml   # Investigation provenance (contributors, conditions, publication)
 │   ├── network.yaml         # Metabolic network model (metabolites, reactions, atom transitions)
@@ -40,7 +40,7 @@ project/                     # Project configuration (gen-project outputs)
 
 | Module | Description |
 |---|---|
-| `fluxo_schema.yaml` | Main schema with imports + `FluxoDataset` root container |
+| `fluxolink.yaml` | Main schema with imports + `FluxoDataset` root container |
 | `enumerations.yaml` | Semantic enums backed by FLUXO ontology terms |
 | `investigation.yaml` | Investigation provenance (contributors, conditions, publication) |
 | `network.yaml` | Metabolic network model (metabolites, reactions, atom transitions, constraints) |
@@ -79,8 +79,8 @@ project/                     # Project configuration (gen-project outputs)
 
 ## Agent Workflow
 
-1. **Schema changes:** Edit `.yaml` files in `src/fluxo_schema/schema/`, then regenerate `datamodel/`
-2. **Python changes:** Edit `.py` files in `src/fluxo_schema/` or `tests/`
+1. **Schema changes:** Edit `.yaml` files in `src/fluxolink/schema/`, then regenerate `datamodel/`
+2. **Python changes:** Edit `.py` files in `src/fluxolink/` or `tests/`
 3. **After any change:** Run `uv run ruff check src tests && uv run pytest`
 4. **Before committing:** Run `uv run pre-commit run --all-files`
 

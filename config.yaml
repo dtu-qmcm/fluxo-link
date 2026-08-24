@@ -1,0 +1,10 @@
+# config.yaml — generator arguments for `gen-project`.
+generator_args:
+  pydantic:
+    output: src/fluxolink/datamodel/fluxolink.py
+  jsonschema:
+    top_class: FluxoDataset
+  owl:
+    mergeimports: true
+  erdiagram: {}
+  doc: {}

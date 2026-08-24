@@ -1,11 +1,11 @@
-id: https://w3id.org/fluxo/schema/enumerations
-name: fluxo-enumerations
+id: https://w3id.org/fluxolink/enumerations
+name: fluxolink-enumerations
 title: FLUXO Enumerations
 description: >-
   Semantic enumerations backed by FLUXO ontology terms for software,
   methods, file formats, analytical methods, and flux types.
 
-license: MIT
+license: Apache-2.0
 
 prefixes:
   linkml: https://w3id.org/linkml/
@@ -44,10 +44,6 @@ enums:
       BayFlux:
         description: BayFlux - Bayesian flux estimation
         meaning: fluxo:FLUXO_0000120
-      COBRApy:
-        description: COBRApy - Python package for constraint-based modeling (FBA)
-      cameo:
-        description: cameo - Python platform for metabolic engineering design
       other:
         description: >-
           Other software not listed; specify via the companion
@@ -68,26 +64,14 @@ enums:
       dynamic_MFA:
         description: Dynamic isotope-based MFA
         meaning: fluxo:FLUXO_0000045
-      MFA:
-        description: Generic metabolic flux analysis
-        meaning: fluxo:FLUXO_0000040
       I_MFA:
         description: >-
           Isotope-based metabolic flux analysis (parent of 13C-MFA,
           IST-MFA, INST-MFA)
         meaning: fluxo:FLUXO_0000041
-      C13_MFA:
-        description: 13C metabolic flux analysis
-        meaning: fluxo:FLUXO_0000042
       FBA:
         description: Flux balance analysis (stoichiometry-based, no isotope)
         meaning: fluxo:FLUXO_0000039
-      stoichiometry_based_MFA:
-        description: Stoichiometry-based MFA (parent of FBA, constraint-based)
-        meaning: fluxo:FLUXO_0000018
-      constraint_based_MFA:
-        description: Constraint-based MFA (FBA variant with additional constraints)
-        meaning: fluxo:FLUXO_0000019
 
   InputFormatEnum:
     description: >-
@@ -146,12 +130,6 @@ enums:
       NMR:
         description: Nuclear magnetic resonance
         meaning: fluxo:FLUXO_0000195
-      NMR_1D_13C:
-        description: 1D 13C NMR spectroscopy
-      NMR_2D_HSQC:
-        description: 2D 1H-13C HSQC NMR
-      NMR_2D_TOCSY:
-        description: 2D TOCSY NMR
       other:
         description: >-
           Other analytical method not listed; specify via the companion
@@ -234,32 +212,6 @@ enums:
       one:
         description: Scale to one
 
-  AerationEnum:
-    description: >-
-      Aeration/oxygenation status of the cultivation. No FLUXO terms;
-      left unmapped.
-    permissible_values:
-      aerobic:
-        description: Fully aerated cultivation
-      microaerobic:
-        description: Oxygen-limited cultivation
-      anaerobic:
-        description: Cultivation without oxygen
-
-  CultivationModeEnum:
-    description: >-
-      Cultivation mode of the bioreactor/culture. No FLUXO terms;
-      left unmapped.
-    permissible_values:
-      batch:
-        description: Batch cultivation
-      fed_batch:
-        description: Fed-batch cultivation
-      chemostat:
-        description: Chemostat (continuous, controlled dilution rate)
-      continuous:
-        description: Continuous cultivation (general)
-
   ConfidenceIntervalMethodEnum:
     description: >-
       Method used to compute confidence intervals on estimated fluxes or
@@ -275,3 +227,67 @@ enums:
         description: Grid search over parameter space
       other:
         description: Other method not listed
+
+  NMRMultipletTypeEnum:
+    description: >-
+      13C NMR multiplet types indicating the labeling state of
+      neighboring carbon atoms. No FLUXO terms; left unmapped.
+    permissible_values:
+      S:
+        description: Singlet — carbon unlabeled, neighbors unlabeled.
+      DL:
+        description: Left doublet — carbon labeled, left neighbor unlabeled.
+      DR:
+        description: Right doublet — carbon labeled, right neighbor unlabeled.
+      DD:
+        description: Double doublet — carbon labeled, both neighbors unlabeled.
+      T:
+        description: Triplet — carbon labeled, both neighbors labeled.
+
+  FileRoleEnum:
+    description: >-
+      Role a source file plays in a fluxomics dataset. Mapped to the
+      FLUXO concept the file content represents (not a "file role"
+      per se — FLUXO has no file-role hierarchy; the content class is
+      the closest semantic anchor).
+    permissible_values:
+      network:
+        description: Metabolic network model file.
+        meaning: fluxo:FLUXO_0000127
+      measurements:
+        description: Measurement data file (MID, NMR, flux, pool size).
+        meaning: fluxo:FLUXO_0000089
+      tracer:
+        description: Tracer / labeled source specification file.
+        meaning: fluxo:FLUXO_0000078
+      constraints:
+        description: Flux or pool size constraint file.
+        meaning: fluxo:FLUXO_0000068
+      simulation:
+        description: Simulation configuration / setup file.
+        meaning: fluxo:FLUXO_0000057
+      results:
+        description: Simulation output / results file.
+        meaning: fluxo:FLUXO_0000159
+      configuration:
+        description: Tool or run configuration file.
+      other:
+        description: >-
+          Other role not listed; specify via the SourceFile
+          description free-text slot.
+
+  DatasetTypeEnum:
+    description: >-
+      Classification of a FluxoDataset by curation tier. FLUXO has no
+      benchmark/catalog dataset distinction; left unmapped pending
+      ontology terms.
+    permissible_values:
+      benchmark:
+        description: >-
+          Tier-2-complete dataset carrying input ground truth
+          (network + experiment + measurements). Subject to the
+          VALIDATION_REQUIREMENTS ruleset.
+      catalog:
+        description: >-
+          Tier-1 dataset cataloging results with minimal provenance;
+          Tier-2 input content is optional.

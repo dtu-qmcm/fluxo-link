@@ -1,11 +1,11 @@
-id: https://w3id.org/fluxo/schema/network
-name: fluxo-network
+id: https://w3id.org/fluxolink/network
+name: fluxolink-network
 title: FLUXO Network Module
 description: >-
   Metabolic network model classes including metabolites, reactions,
   atom transitions, and flux constraints.
 
-license: MIT
+license: Apache-2.0
 
 prefixes:
   linkml: https://w3id.org/linkml/
@@ -103,7 +103,13 @@ classes:
           biological counterpart.
         slot_uri: fluxo:FLUXO_0000061
         range: boolean
-        ifabsent: false
+        ifabsent: "false"
+      aliases:
+        description: >-
+          Tool-namespaced alternative identifiers (e.g.,
+          "influx_si:v5", "freeflux:R1"). The canonical↔native ID
+          mapping is new information present in no native file — it
+          lives in the dataset, once per entity.
 
   NetworkReaction:
     class_uri: fluxo:FLUXO_0000005
@@ -122,12 +128,12 @@ classes:
         slot_uri: fluxo:FLUXO_0000007
         range: boolean
         required: true
-        ifabsent: true
+        ifabsent: "true"
       reaction_type:
         description: The type of reaction.
         range: ReactionTypeEnum
-      substrates:
-        description: Substrate (educt) participants consumed by the reaction.
+      reactants:
+        description: Reactant (educt) participants consumed by the reaction.
         range: ReactionParticipant
         multivalued: true
         inlined_as_list: true
@@ -162,13 +168,19 @@ classes:
           Whether this is a lumped reaction combining multiple steps.
         slot_uri: fluxo:FLUXO_0000066
         range: boolean
-        ifabsent: false
+        ifabsent: "false"
       is_pseudo:
         description: >-
           Whether this is a pseudo-reaction with no biological counterpart.
         slot_uri: fluxo:FLUXO_0000065
         range: boolean
-        ifabsent: false
+        ifabsent: "false"
+      aliases:
+        description: >-
+          Tool-namespaced alternative identifiers (e.g.,
+          "influx_si:v5", "freeflux:R1"). The canonical↔native ID
+          mapping is new information present in no native file — it
+          lives in the dataset, once per entity.
 
   ReactionParticipant:
     class_uri: fluxo:FLUXO_0000185
@@ -184,7 +196,7 @@ classes:
       stoichiometry:
         description: >-
           Stoichiometric coefficient (absolute value). The participant's
-          role (substrate vs product) is determined by which list it
+          role (reactant vs product) is determined by which list it
           appears in on NetworkReaction.
         slot_uri: fluxo:FLUXO_0000205
         range: float
@@ -219,18 +231,18 @@ classes:
   AtomTransition:
     class_uri: fluxo:FLUXO_0000155
     description: >-
-      A single atom-to-atom mapping from a substrate atom to a product
+      A single atom-to-atom mapping from a reactant atom to a product
       atom in a reaction.
     attributes:
-      substrate_metabolite_id:
+      reactant_metabolite_id:
         description: >-
-          Identifier of the substrate metabolite containing the source
+          Identifier of the reactant metabolite containing the source
           atom.
         range: NetworkMetabolite
         required: true
-      substrate_atom_index:
+      reactant_atom_index:
         description: >-
-          Zero-based index of the atom position in the substrate
+          Zero-based index of the atom position in the reactant
           metabolite.
         slot_uri: fluxo:FLUXO_0000069
         range: integer
@@ -287,6 +299,7 @@ classes:
         slot_uri: fluxo:FLUXO_0000223
 
   PoolSizeConstraint:
+    class_uri: fluxo:FLUXO_0000068
     description: >-
       A constraint on metabolite pool size values in the network model.
       Parallel to FluxConstraint but applies to a metabolite rather than

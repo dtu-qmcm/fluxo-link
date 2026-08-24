@@ -1,6 +1,6 @@
-id: https://w3id.org/fluxo/schema
-name: fluxo-schema
-title: FLUXO Schema
+id: https://w3id.org/fluxolink
+name: fluxolink
+title: FluxoLink
 description: >-
   A LinkML data model for metabolic flux analysis (MFA) investigations,
   including isotope-based MFA (13C-MFA, IST-MFA, INST-MFA) and
@@ -8,7 +8,7 @@ description: >-
   Supports data from tools such as freeflux, 13CFLUX2, influx_si, INCA,
   COBRApy, and others.
 
-license: MIT
+license: Apache-2.0
 version: 0.1.0
 
 prefixes:
@@ -16,7 +16,7 @@ prefixes:
   fluxo: http://purl.obolibrary.org/obo/
   obo: http://purl.obolibrary.org/obo/
   schema: http://schema.org/
-  ORCID: https://orcid.org/
+  ORCID: http://identifiers.org/orcid/
 
 default_prefix: fluxo
 default_range: string
@@ -46,7 +46,7 @@ classes:
       description:
         description: Detailed description of the dataset contents.
       schema_version:
-        description: Version of the FLUXO schema this dataset conforms to.
+        description: Version of the FluxoLink schema this dataset conforms to.
       creation_date:
         description: Date the dataset was created.
         range: date
@@ -57,6 +57,20 @@ classes:
         description: >-
           FLUXO ontology release version used for term mappings (e.g.,
           "2026-04-08"). Pins the ontology version for traceability.
+      dataset_type:
+        description: >-
+          Classification of this dataset by curation tier. When
+          "benchmark", Tier-2 input content (networks, experiments,
+          measurements) is required; when "catalog" or absent, it is
+          optional.
+        range: DatasetTypeEnum
+      source_files:
+        description: >-
+          Native MFA files referenced by this dataset (FluxML, MTF,
+          FTBL, .mat, etc.). Tier-1 provenance layer.
+        range: SourceFile
+        multivalued: true
+        inlined_as_list: true
       investigations:
         description: All investigations in this dataset.
         range: Investigation

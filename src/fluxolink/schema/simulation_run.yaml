@@ -1,11 +1,11 @@
-id: https://w3id.org/fluxo/schema/simulation_run
-name: fluxo-simulation-run
+id: https://w3id.org/fluxolink/simulation_run
+name: fluxolink-simulation-run
 title: FLUXO Simulation Run Module
 description: >-
   Simulation run classes including software information, flux solutions,
   and goodness-of-fit statistics.
 
-license: MIT
+license: Apache-2.0
 
 prefixes:
   linkml: https://w3id.org/linkml/
@@ -96,11 +96,6 @@ classes:
       convergence_tolerance:
         description: Solver convergence tolerance (e.g., 1e-6).
         range: float
-      isotopic_state_space:
-        description: >-
-          Isotopic state-space representation used for computation.
-        slot_uri: fluxo:FLUXO_0000146
-        range: IsotopicStateSpaceEnum
       stop_time:
         description: >-
           Simulation stop time for non-stationary (INST) MFA.
@@ -121,6 +116,30 @@ classes:
         description: Goodness-of-fit statistics for the solution.
         range: GoodnessOfFit
         inlined: true
+      isotopic_state_space:
+        description: >-
+          Isotopic state-space representation used for computation
+          (isotopomer, cumomer, or EMU). A benchmarking-fairness
+          parameter — tools differ in their native representation
+          (13CFLUX2 cumomer, INCA cumomer/EMU, miemu EMU).
+        slot_uri: fluxo:FLUXO_0000146
+        range: IsotopicStateSpaceEnum
+      input_files:
+        description: >-
+          Native input files used for this simulation run (network,
+          measurements, tracers, constraints, configuration).
+        slot_uri: fluxo:FLUXO_0000266
+        range: SourceFile
+        multivalued: true
+        inlined_as_list: true
+      output_files:
+        description: >-
+          Output / results files produced by this simulation run.
+          Provenance for extracted results (NMDC has_output pattern).
+        slot_uri: fluxo:FLUXO_0000284
+        range: SourceFile
+        multivalued: true
+        inlined_as_list: true
 
   SoftwareInfo:
     class_uri: fluxo:FLUXO_0000102

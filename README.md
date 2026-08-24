@@ -1,10 +1,10 @@
-# FLUXO Schema
+# FluxoLink
 
 A LinkML data model for metabolic flux analysis (MFA) investigations, grounded in the [FLUXO ontology](https://purl.obolibrary.org/obo/fluxo/).
 
 ## Overview
 
-FLUXO Schema provides a structured, ontology-compliant schema for curating experimental data, metabolic network models, simulation parameters, and flux solutions. It covers **isotope-based MFA** (13C-MFA, IST-MFA, INST-MFA) and **stoichiometry-based methods** (FBA), and supports data from tools such as **freeflux**, **13CFLUX2**, **influx_si**, **INCA**, and **COBRApy**.
+FluxoLink provides a structured, ontology-compliant schema for curating experimental data, metabolic network models, simulation parameters, and flux solutions. It covers **isotope-based MFA** (13C-MFA, IST-MFA, INST-MFA) and **stoichiometry-based methods** (FBA), and supports data from tools such as **freeflux**, **13CFLUX2**, **influx_si**, **INCA**, and **COBRApy**.
 
 ## Architecture
 
@@ -18,7 +18,7 @@ The LinkML schema serves as the interface layer between the ontology (what conce
 
 | Module | Description |
 |---|---|
-| `fluxo_schema.yaml` | Main schema with imports; defines the `FluxoDataset` root container (`tree_root`) |
+| `fluxolink.yaml` | Main schema with imports; defines the `FluxoDataset` root container (`tree_root`) |
 | `enumerations.yaml` | Semantic enums backed by FLUXO ontology terms |
 | `investigation.yaml` | Investigation provenance (contributors, cultivation `Condition`, publication) |
 | `network.yaml` | Metabolic network model (metabolites, reactions, atom transitions, flux/pool-size constraints) |
@@ -52,16 +52,16 @@ Equivalent commands without `just`:
 ```bash
 uv run pytest                                                   # tests
 uv run ruff check src tests && uv run ruff format --check src tests   # lint
-uv run gen-pydantic src/fluxo_schema/schema/fluxo_schema.yaml > src/fluxo_schema/datamodel/fluxo_schema.py
-uv run linkml-validate -s src/fluxo_schema/schema/fluxo_schema.yaml examples/valid/simple_model_dataset.yaml
+uv run gen-pydantic src/fluxolink/schema/fluxolink.yaml > src/fluxolink/datamodel/fluxolink.py
+uv run linkml-validate -s src/fluxolink/schema/fluxolink.yaml examples/valid/simple_model_dataset.yaml
 ```
 
 ### Generated datamodel
 
-The Pydantic classes live at `src/fluxo_schema/datamodel/fluxo_schema.py` and are importable:
+The Pydantic classes live at `src/fluxolink/datamodel/fluxolink.py` and are importable:
 
 ```python
-from fluxo_schema.datamodel.fluxo_schema import FluxoDataset, Investigation, SimulationRun
+from fluxolink.datamodel.fluxolink import FluxoDataset, Investigation, SimulationRun
 ```
 
 Regenerate them with `just gen-pydantic` whenever the schema changes.

@@ -73,17 +73,17 @@ linkml_meta = LinkMLMeta({'default_prefix': 'fluxo',
                     'IST-MFA, INST-MFA) and stoichiometry-based methods (FBA). '
                     'Grounded in the FLUXO ontology. Supports data from tools such '
                     'as freeflux, 13CFLUX2, influx_si, INCA, COBRApy, and others.',
-     'id': 'https://w3id.org/fluxo/schema',
+     'id': 'https://w3id.org/fluxolink',
      'imports': ['linkml:types',
                  'enumerations',
                  'investigation',
                  'network',
                  'experiment',
                  'simulation_run'],
-     'license': 'MIT',
-     'name': 'fluxo-schema',
+     'license': 'Apache-2.0',
+     'name': 'fluxolink',
      'prefixes': {'ORCID': {'prefix_prefix': 'ORCID',
-                            'prefix_reference': 'https://orcid.org/'},
+                            'prefix_reference': 'http://identifiers.org/orcid/'},
                   'fluxo': {'prefix_prefix': 'fluxo',
                             'prefix_reference': 'http://purl.obolibrary.org/obo/'},
                   'linkml': {'prefix_prefix': 'linkml',
@@ -92,8 +92,8 @@ linkml_meta = LinkMLMeta({'default_prefix': 'fluxo',
                           'prefix_reference': 'http://purl.obolibrary.org/obo/'},
                   'schema': {'prefix_prefix': 'schema',
                              'prefix_reference': 'http://schema.org/'}},
-     'source_file': 'src/fluxo_schema/schema/fluxo_schema.yaml',
-     'title': 'FLUXO Schema'} )
+     'source_file': 'src/fluxolink/schema/fluxolink.yaml',
+     'title': 'FluxoLink'} )
 
 class MFASoftwareEnum(str, Enum):
     """
@@ -127,14 +127,6 @@ class MFASoftwareEnum(str, Enum):
     """
     BayFlux - Bayesian flux estimation
     """
-    COBRApy = "COBRApy"
-    """
-    COBRApy - Python package for constraint-based modeling (FBA)
-    """
-    cameo = "cameo"
-    """
-    cameo - Python platform for metabolic engineering design
-    """
     other = "other"
     """
     Other software not listed; specify via the companion software_name_other free-text slot.
@@ -157,29 +149,13 @@ class MFAMethodEnum(str, Enum):
     """
     Dynamic isotope-based MFA
     """
-    MFA = "MFA"
-    """
-    Generic metabolic flux analysis
-    """
     I_MFA = "I_MFA"
     """
     Isotope-based metabolic flux analysis (parent of 13C-MFA, IST-MFA, INST-MFA)
     """
-    C13_MFA = "C13_MFA"
-    """
-    13C metabolic flux analysis
-    """
     FBA = "FBA"
     """
     Flux balance analysis (stoichiometry-based, no isotope)
-    """
-    stoichiometry_based_MFA = "stoichiometry_based_MFA"
-    """
-    Stoichiometry-based MFA (parent of FBA, constraint-based)
-    """
-    constraint_based_MFA = "constraint_based_MFA"
-    """
-    Constraint-based MFA (FBA variant with additional constraints)
     """
 
 
@@ -254,18 +230,6 @@ class AnalyticalMethodEnum(str, Enum):
     NMR = "NMR"
     """
     Nuclear magnetic resonance
-    """
-    NMR_1D_13C = "NMR_1D_13C"
-    """
-    1D 13C NMR spectroscopy
-    """
-    NMR_2D_HSQC = "NMR_2D_HSQC"
-    """
-    2D 1H-13C HSQC NMR
-    """
-    NMR_2D_TOCSY = "NMR_2D_TOCSY"
-    """
-    2D TOCSY NMR
     """
     other = "other"
     """
@@ -375,46 +339,6 @@ class ScaleMethodEnum(str, Enum):
     """
 
 
-class AerationEnum(str, Enum):
-    """
-    Aeration/oxygenation status of the cultivation. No FLUXO terms; left unmapped.
-    """
-    aerobic = "aerobic"
-    """
-    Fully aerated cultivation
-    """
-    microaerobic = "microaerobic"
-    """
-    Oxygen-limited cultivation
-    """
-    anaerobic = "anaerobic"
-    """
-    Cultivation without oxygen
-    """
-
-
-class CultivationModeEnum(str, Enum):
-    """
-    Cultivation mode of the bioreactor/culture. No FLUXO terms; left unmapped.
-    """
-    batch = "batch"
-    """
-    Batch cultivation
-    """
-    fed_batch = "fed_batch"
-    """
-    Fed-batch cultivation
-    """
-    chemostat = "chemostat"
-    """
-    Chemostat (continuous, controlled dilution rate)
-    """
-    continuous = "continuous"
-    """
-    Continuous cultivation (general)
-    """
-
-
 class ConfidenceIntervalMethodEnum(str, Enum):
     """
     Method used to compute confidence intervals on estimated fluxes or pool sizes. No FLUXO terms; left unmapped.
@@ -441,13 +365,91 @@ class ConfidenceIntervalMethodEnum(str, Enum):
     """
 
 
+class NMRMultipletTypeEnum(str, Enum):
+    """
+    13C NMR multiplet types indicating the labeling state of neighboring carbon atoms. No FLUXO terms; left unmapped.
+    """
+    S = "S"
+    """
+    Singlet — carbon unlabeled, neighbors unlabeled.
+    """
+    DL = "DL"
+    """
+    Left doublet — carbon labeled, left neighbor unlabeled.
+    """
+    DR = "DR"
+    """
+    Right doublet — carbon labeled, right neighbor unlabeled.
+    """
+    DD = "DD"
+    """
+    Double doublet — carbon labeled, both neighbors unlabeled.
+    """
+    T = "T"
+    """
+    Triplet — carbon labeled, both neighbors labeled.
+    """
+
+
+class FileRoleEnum(str, Enum):
+    """
+    Role a source file plays in a fluxomics dataset. Mapped to the FLUXO concept the file content represents (not a "file role" per se — FLUXO has no file-role hierarchy; the content class is the closest semantic anchor).
+    """
+    network = "network"
+    """
+    Metabolic network model file.
+    """
+    measurements = "measurements"
+    """
+    Measurement data file (MID, NMR, flux, pool size).
+    """
+    tracer = "tracer"
+    """
+    Tracer / labeled source specification file.
+    """
+    constraints = "constraints"
+    """
+    Flux or pool size constraint file.
+    """
+    simulation = "simulation"
+    """
+    Simulation configuration / setup file.
+    """
+    results = "results"
+    """
+    Simulation output / results file.
+    """
+    configuration = "configuration"
+    """
+    Tool or run configuration file.
+    """
+    other = "other"
+    """
+    Other role not listed; specify via the SourceFile description free-text slot.
+    """
+
+
+class DatasetTypeEnum(str, Enum):
+    """
+    Classification of a FluxoDataset by curation tier. FLUXO has no benchmark/catalog dataset distinction; left unmapped pending ontology terms.
+    """
+    benchmark = "benchmark"
+    """
+    Tier-2-complete dataset carrying input ground truth (network + experiment + measurements). Subject to the VALIDATION_REQUIREMENTS ruleset.
+    """
+    catalog = "catalog"
+    """
+    Tier-1 dataset cataloging results with minimal provenance; Tier-2 input content is optional.
+    """
+
+
 
 class Investigation(ConfiguredBaseModel):
     """
     A fluxomics investigation comprising one or more isotope labeling experiments or simulation studies.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000162',
-         'from_schema': 'https://w3id.org/fluxo/schema/investigation'})
+         'from_schema': 'https://w3id.org/fluxolink/investigation'})
 
     id: str = Field(default=..., description="""Unique identifier for the investigation.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
                        'Contributor',
@@ -465,6 +467,7 @@ class Investigation(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
+                       'SourceFile',
                        'SimulationRun',
                        'SoftwareInfo',
                        'FluxSolution',
@@ -477,7 +480,7 @@ class Investigation(ConfiguredBaseModel):
                        'NetworkReaction',
                        'LabelingExperiment',
                        'FluxoDataset']} })
-    description: Optional[str] = Field(default=None, description="""Detailed description of the investigation.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation', 'FluxoDataset']} })
+    description: Optional[str] = Field(default=None, description="""Detailed description of the investigation.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation', 'SourceFile', 'FluxoDataset']} })
     publication_doi: Optional[str] = Field(default=None, description="""DOI of the associated publication.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation']} })
     contributors: Optional[list[Contributor]] = Field(default=None, description="""List of contributors to this investigation.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation']} })
 
@@ -487,7 +490,7 @@ class Contributor(ConfiguredBaseModel):
     A person who contributed to a fluxomics investigation.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000253',
-         'from_schema': 'https://w3id.org/fluxo/schema/investigation'})
+         'from_schema': 'https://w3id.org/fluxolink/investigation'})
 
     id: str = Field(default=..., description="""Unique identifier for the contributor.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
                        'Contributor',
@@ -505,6 +508,7 @@ class Contributor(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
+                       'SourceFile',
                        'SimulationRun',
                        'SoftwareInfo',
                        'FluxSolution',
@@ -528,7 +532,7 @@ class Condition(ConfiguredBaseModel):
     Cultivation conditions for the biological system under study, including organism, strain, culture medium, and growth rate.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000218',
-         'from_schema': 'https://w3id.org/fluxo/schema/investigation'})
+         'from_schema': 'https://w3id.org/fluxolink/investigation'})
 
     id: str = Field(default=..., description="""Unique identifier for the condition record.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
                        'Contributor',
@@ -546,6 +550,7 @@ class Condition(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
+                       'SourceFile',
                        'SimulationRun',
                        'SoftwareInfo',
                        'FluxSolution',
@@ -563,11 +568,6 @@ class Condition(ConfiguredBaseModel):
     culture_medium: Optional[str] = Field(default=None, description="""Growth medium used for cultivation.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Condition'], 'slot_uri': 'fluxo:FLUXO_0000184'} })
     specific_growth_rate: float = Field(default=..., description="""Measured specific growth rate of the organism.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Condition'], 'slot_uri': 'fluxo:FLUXO_0000084'} })
     growth_rate_unit: str = Field(default=..., description="""Unit for the growth rate (e.g., 1/h).""", json_schema_extra = { "linkml_meta": {'domain_of': ['Condition'], 'slot_uri': 'fluxo:FLUXO_0000219'} })
-    aeration: Optional[AerationEnum] = Field(default=None, description="""Aeration status of the cultivation.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Condition']} })
-    temperature: Optional[float] = Field(default=None, description="""Cultivation temperature in degrees Celsius.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Condition']} })
-    ph: Optional[float] = Field(default=None, description="""Culture pH.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Condition']} })
-    cultivation_mode: Optional[CultivationModeEnum] = Field(default=None, description="""Cultivation mode (batch, fed-batch, chemostat, continuous).""", json_schema_extra = { "linkml_meta": {'domain_of': ['Condition']} })
-    genotype: Optional[str] = Field(default=None, description="""Genetic modifications relative to wild type (e.g., \"delta-pgi\", \"overexpress glk\").""", json_schema_extra = { "linkml_meta": {'domain_of': ['Condition']} })
 
 
 class MetabolicNetworkModel(ConfiguredBaseModel):
@@ -575,7 +575,7 @@ class MetabolicNetworkModel(ConfiguredBaseModel):
     A computational representation of a metabolic network, including metabolites, reactions, compartments, and atom transitions.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000127',
-         'from_schema': 'https://w3id.org/fluxo/schema/network'})
+         'from_schema': 'https://w3id.org/fluxolink/network'})
 
     id: str = Field(default=..., description="""Unique identifier for the network model.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
                        'Contributor',
@@ -593,6 +593,7 @@ class MetabolicNetworkModel(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
+                       'SourceFile',
                        'SimulationRun',
                        'SoftwareInfo',
                        'FluxSolution',
@@ -617,7 +618,7 @@ class NetworkMetabolite(ConfiguredBaseModel):
     A metabolite in a metabolic network model.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000172',
-         'from_schema': 'https://w3id.org/fluxo/schema/network'})
+         'from_schema': 'https://w3id.org/fluxolink/network'})
 
     id: str = Field(default=..., description="""Unique metabolite identifier (e.g., G6P_c).""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
                        'Contributor',
@@ -635,6 +636,7 @@ class NetworkMetabolite(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
+                       'SourceFile',
                        'SimulationRun',
                        'SoftwareInfo',
                        'FluxSolution',
@@ -654,8 +656,9 @@ class NetworkMetabolite(ConfiguredBaseModel):
     inchi: Optional[str] = Field(default=None, description="""InChI identifier for the metabolite.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NetworkMetabolite'], 'slot_uri': 'fluxo:FLUXO_0000239'} })
     smiles: Optional[str] = Field(default=None, description="""SMILES representation of the metabolite.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NetworkMetabolite'], 'slot_uri': 'fluxo:FLUXO_0000240'} })
     is_pseudo: Optional[bool] = Field(default=False, description="""Whether this is a pseudo-metabolite (e.g., biomass) with no biological counterpart.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NetworkMetabolite', 'NetworkReaction'],
-         'ifabsent': 'False',
+         'ifabsent': 'false',
          'slot_uri': 'fluxo:FLUXO_0000061'} })
+    aliases: Optional[str] = Field(default=None, description="""Tool-namespaced alternative identifiers (e.g., \"influx_si:v5\", \"freeflux:R1\"). The canonical↔native ID mapping is new information present in no native file — it lives in the dataset, once per entity.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NetworkMetabolite', 'NetworkReaction']} })
 
 
 class NetworkReaction(ConfiguredBaseModel):
@@ -663,7 +666,7 @@ class NetworkReaction(ConfiguredBaseModel):
     A biochemical reaction in a metabolic network model.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000005',
-         'from_schema': 'https://w3id.org/fluxo/schema/network'})
+         'from_schema': 'https://w3id.org/fluxolink/network'})
 
     id: str = Field(default=..., description="""Unique reaction identifier (e.g., PGI, SCS).""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
                        'Contributor',
@@ -681,6 +684,7 @@ class NetworkReaction(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
+                       'SourceFile',
                        'SimulationRun',
                        'SoftwareInfo',
                        'FluxSolution',
@@ -694,18 +698,19 @@ class NetworkReaction(ConfiguredBaseModel):
                        'LabelingExperiment',
                        'FluxoDataset']} })
     reversibility: bool = Field(default=True, description="""Whether the reaction can proceed in both directions.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NetworkReaction'],
-         'ifabsent': 'True',
+         'ifabsent': 'true',
          'slot_uri': 'fluxo:FLUXO_0000007'} })
     reaction_type: Optional[ReactionTypeEnum] = Field(default=None, description="""The type of reaction.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NetworkReaction']} })
-    substrates: list[ReactionParticipant] = Field(default=..., description="""Substrate (educt) participants consumed by the reaction.""", min_length=1, json_schema_extra = { "linkml_meta": {'domain_of': ['NetworkReaction']} })
+    reactants: list[ReactionParticipant] = Field(default=..., description="""Reactant (educt) participants consumed by the reaction.""", min_length=1, json_schema_extra = { "linkml_meta": {'domain_of': ['NetworkReaction']} })
     products: Optional[list[ReactionParticipant]] = Field(default=None, description="""Product participants produced by the reaction. Recommended rather than strictly required because boundary reactions (sink, demand) legitimately have no products; a conditional rule (required unless boundary reaction) is deferred to Phase 5.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NetworkReaction'], 'recommended': True} })
     atom_transition_variants: Optional[list[AtomTransitionVariant]] = Field(default=None, description="""Atom transition variants for this reaction. Multiple variants exist when symmetric compounds create ambiguity in atom transitions. Recommended rather than required: isotope-based MFA requires transitions for reactions among carbon-tracked metabolites, but stoichiometry-based methods (FBA) and reactions among untracked metabolites have none. The conditional rule (required when n_tracked_atoms > 0) is deferred to Phase 5.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NetworkReaction'], 'recommended': True} })
     is_lumped: Optional[bool] = Field(default=False, description="""Whether this is a lumped reaction combining multiple steps.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NetworkReaction'],
-         'ifabsent': 'False',
+         'ifabsent': 'false',
          'slot_uri': 'fluxo:FLUXO_0000066'} })
     is_pseudo: Optional[bool] = Field(default=False, description="""Whether this is a pseudo-reaction with no biological counterpart.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NetworkMetabolite', 'NetworkReaction'],
-         'ifabsent': 'False',
+         'ifabsent': 'false',
          'slot_uri': 'fluxo:FLUXO_0000065'} })
+    aliases: Optional[str] = Field(default=None, description="""Tool-namespaced alternative identifiers (e.g., \"influx_si:v5\", \"freeflux:R1\"). The canonical↔native ID mapping is new information present in no native file — it lives in the dataset, once per entity.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NetworkMetabolite', 'NetworkReaction']} })
 
 
 class ReactionParticipant(ConfiguredBaseModel):
@@ -713,7 +718,7 @@ class ReactionParticipant(ConfiguredBaseModel):
     A metabolite participating in a reaction with a specific stoichiometric coefficient.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000185',
-         'from_schema': 'https://w3id.org/fluxo/schema/network'})
+         'from_schema': 'https://w3id.org/fluxolink/network'})
 
     metabolite_id: str = Field(default=..., description="""Reference to the metabolite identifier in the network model.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ReactionParticipant',
                        'PoolSizeConstraint',
@@ -722,7 +727,7 @@ class ReactionParticipant(ConfiguredBaseModel):
                        'PoolSizeMeasurement',
                        'NMRIsotopomerMeasurement',
                        'PoolSizeResult']} })
-    stoichiometry: Optional[float] = Field(default=1.0, description="""Stoichiometric coefficient (absolute value). The participant's role (substrate vs product) is determined by which list it appears in on NetworkReaction.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ReactionParticipant'],
+    stoichiometry: Optional[float] = Field(default=1.0, description="""Stoichiometric coefficient (absolute value). The participant's role (reactant vs product) is determined by which list it appears in on NetworkReaction.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ReactionParticipant'],
          'ifabsent': 'float(1.0)',
          'slot_uri': 'fluxo:FLUXO_0000205'} })
 
@@ -732,7 +737,7 @@ class AtomTransitionVariant(ConfiguredBaseModel):
     A variant of atom transitions for a reaction. E.g. reactions involving symmetric compounds have multiple variants because the atom mapping is ambiguous.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000224',
-         'from_schema': 'https://w3id.org/fluxo/schema/network'})
+         'from_schema': 'https://w3id.org/fluxolink/network'})
 
     variant_id: str = Field(default=..., description="""Identifier for this variant (e.g., \"SCS___1\", \"SCS___2\").""", json_schema_extra = { "linkml_meta": {'domain_of': ['AtomTransitionVariant']} })
     ratio: Optional[float] = Field(default=None, description="""Likelihood (0.0-1.0) of this atom-transition variant, used for scrambling reactions where symmetric compounds make the atom mapping ambiguous. Should sum to 1.0 across all variants of a reaction.""", ge=0.0, le=1.0, json_schema_extra = { "linkml_meta": {'domain_of': ['AtomTransitionVariant']} })
@@ -741,13 +746,13 @@ class AtomTransitionVariant(ConfiguredBaseModel):
 
 class AtomTransition(ConfiguredBaseModel):
     """
-    A single atom-to-atom mapping from a substrate atom to a product atom in a reaction.
+    A single atom-to-atom mapping from a reactant atom to a product atom in a reaction.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000155',
-         'from_schema': 'https://w3id.org/fluxo/schema/network'})
+         'from_schema': 'https://w3id.org/fluxolink/network'})
 
-    substrate_metabolite_id: str = Field(default=..., description="""Identifier of the substrate metabolite containing the source atom.""", json_schema_extra = { "linkml_meta": {'domain_of': ['AtomTransition']} })
-    substrate_atom_index: int = Field(default=..., description="""Zero-based index of the atom position in the substrate metabolite.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['AtomTransition'], 'slot_uri': 'fluxo:FLUXO_0000069'} })
+    reactant_metabolite_id: str = Field(default=..., description="""Identifier of the reactant metabolite containing the source atom.""", json_schema_extra = { "linkml_meta": {'domain_of': ['AtomTransition']} })
+    reactant_atom_index: int = Field(default=..., description="""Zero-based index of the atom position in the reactant metabolite.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['AtomTransition'], 'slot_uri': 'fluxo:FLUXO_0000069'} })
     product_metabolite_id: str = Field(default=..., description="""Identifier of the product metabolite containing the destination atom.""", json_schema_extra = { "linkml_meta": {'domain_of': ['AtomTransition']} })
     product_atom_index: int = Field(default=..., description="""Zero-based index of the atom position in the product metabolite.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['AtomTransition'], 'slot_uri': 'fluxo:FLUXO_0000069'} })
     annotation_type: Optional[AtomAnnotationTypeEnum] = Field(default=None, description="""The notation used for this atom transition.""", json_schema_extra = { "linkml_meta": {'domain_of': ['AtomTransition'], 'slot_uri': 'fluxo:FLUXO_0000072'} })
@@ -758,7 +763,7 @@ class FluxConstraint(ConfiguredBaseModel):
     A constraint on metabolic flux values in the network model.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000068',
-         'from_schema': 'https://w3id.org/fluxo/schema/network'})
+         'from_schema': 'https://w3id.org/fluxolink/network'})
 
     id: str = Field(default=..., description="""Unique identifier for the constraint.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
                        'Contributor',
@@ -776,6 +781,7 @@ class FluxConstraint(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
+                       'SourceFile',
                        'SimulationRun',
                        'SoftwareInfo',
                        'FluxSolution',
@@ -796,7 +802,8 @@ class PoolSizeConstraint(ConfiguredBaseModel):
     """
     A constraint on metabolite pool size values in the network model. Parallel to FluxConstraint but applies to a metabolite rather than a reaction.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/fluxo/schema/network'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000068',
+         'from_schema': 'https://w3id.org/fluxolink/network'})
 
     id: str = Field(default=..., description="""Unique identifier for the constraint.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
                        'Contributor',
@@ -814,6 +821,7 @@ class PoolSizeConstraint(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
+                       'SourceFile',
                        'SimulationRun',
                        'SoftwareInfo',
                        'FluxSolution',
@@ -841,7 +849,7 @@ class LabelingExperiment(ConfiguredBaseModel):
     An isotope labeling experiment defining the tracer setup, biological condition, and associated measurement data for an MFA study.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000049',
-         'from_schema': 'https://w3id.org/fluxo/schema/experiment'})
+         'from_schema': 'https://w3id.org/fluxolink/experiment'})
 
     id: str = Field(default=..., description="""Unique identifier for the experiment.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
                        'Contributor',
@@ -859,6 +867,7 @@ class LabelingExperiment(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
+                       'SourceFile',
                        'SimulationRun',
                        'SoftwareInfo',
                        'FluxSolution',
@@ -881,6 +890,7 @@ class LabelingExperiment(ConfiguredBaseModel):
     pool_size_measurements: Optional[list[PoolSizeMeasurement]] = Field(default=None, description="""Measured metabolite pool sizes.""", json_schema_extra = { "linkml_meta": {'domain_of': ['LabelingExperiment']} })
     flux_ratio_measurements: Optional[list[FluxRatioMeasurement]] = Field(default=None, description="""Measured flux ratios between reactions.""", json_schema_extra = { "linkml_meta": {'domain_of': ['LabelingExperiment']} })
     pool_size_ratio_measurements: Optional[list[PoolSizeRatioMeasurement]] = Field(default=None, description="""Measured pool size ratios between metabolites.""", json_schema_extra = { "linkml_meta": {'domain_of': ['LabelingExperiment']} })
+    tracer_summary: Optional[str] = Field(default=None, description="""Human-readable tracer description for catalog browsing (e.g., \"100% [1-13C] glucose\"). Machine-readable spec stays in labeled_sources / native files.""", json_schema_extra = { "linkml_meta": {'domain_of': ['LabelingExperiment']} })
 
 
 class LabeledSource(ConfiguredBaseModel):
@@ -888,7 +898,7 @@ class LabeledSource(ConfiguredBaseModel):
     A labeled source (tracer mixture) supplied to the biological system. Consists of one or more isotopically labeled tracer isotopomers mixed at specified fractions.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000078',
-         'from_schema': 'https://w3id.org/fluxo/schema/experiment'})
+         'from_schema': 'https://w3id.org/fluxolink/experiment'})
 
     id: str = Field(default=..., description="""Unique identifier for the labeled source.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
                        'Contributor',
@@ -906,6 +916,7 @@ class LabeledSource(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
+                       'SourceFile',
                        'SimulationRun',
                        'SoftwareInfo',
                        'FluxSolution',
@@ -927,7 +938,7 @@ class TracerIsotopomer(ConfiguredBaseModel):
     A specific isotopically labeled form of a tracer molecule, defined by its labeling pattern, fraction, and purity.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000134',
-         'from_schema': 'https://w3id.org/fluxo/schema/experiment'})
+         'from_schema': 'https://w3id.org/fluxolink/experiment'})
 
     labeling_pattern: str = Field(default=..., description="""Labeling pattern as a binary string where 1 = labeled atom and 0 = unlabeled atom (e.g., \"100000\" for [1-13C]glucose).""", json_schema_extra = { "linkml_meta": {'domain_of': ['TracerIsotopomer']} })
     tracer_fraction: float = Field(default=..., description="""Proportion of this tracer isotopomer in the labeled source. Should sum to <= 1.0 across all tracers for a source.""", ge=0.0, le=1.0, json_schema_extra = { "linkml_meta": {'domain_of': ['TracerIsotopomer'], 'slot_uri': 'fluxo:FLUXO_0000138'} })
@@ -954,7 +965,7 @@ class MIDMeasurement(ConfiguredBaseModel):
     A group of MID (mass isotopologue distribution) measurements for one metabolite fragment at a given time point.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000143',
-         'from_schema': 'https://w3id.org/fluxo/schema/experiment'})
+         'from_schema': 'https://w3id.org/fluxolink/experiment'})
 
     id: str = Field(default=..., description="""Unique identifier for the measurement group.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
                        'Contributor',
@@ -972,6 +983,7 @@ class MIDMeasurement(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
+                       'SourceFile',
                        'SimulationRun',
                        'SoftwareInfo',
                        'FluxSolution',
@@ -1003,6 +1015,7 @@ class MIDMeasurement(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement']} })
+    replicate: Optional[int] = Field(default=None, description="""Replicate number (1-based) for this measurement group. Carried by miemu; reported in published datasets.""", ge=1, json_schema_extra = { "linkml_meta": {'domain_of': ['MIDMeasurement', 'FluxMeasurement', 'PoolSizeMeasurement']} })
     data_points: Optional[list[MIDDataPoint]] = Field(default=None, description="""Individual MID measurement data points.""", json_schema_extra = { "linkml_meta": {'domain_of': ['MIDMeasurement', 'NMRIsotopomerMeasurement']} })
 
 
@@ -1010,7 +1023,7 @@ class MIDDataPoint(ConfiguredBaseModel):
     """
     A single isotopologue measurement value (one m+i entry in an MID).
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/fluxo/schema/experiment'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/fluxolink/experiment'})
 
     isotopologue_index: int = Field(default=..., description="""Isotopologue mass shift index (m+0, m+1, ..., m+n).""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['MIDDataPoint']} })
     weight: Optional[str] = Field(default=None, description="""Optional MS/MS fragment weight specifier (e.g., \"2,3\") for tandem-MS measurements.""", json_schema_extra = { "linkml_meta": {'domain_of': ['MIDDataPoint']} })
@@ -1037,7 +1050,8 @@ class FluxMeasurement(ConfiguredBaseModel):
     """
     A measured external flux value for a single reaction.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/fluxo/schema/experiment'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000124',
+         'from_schema': 'https://w3id.org/fluxolink/experiment'})
 
     id: str = Field(default=..., description="""Unique identifier for the flux measurement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
                        'Contributor',
@@ -1055,6 +1069,7 @@ class FluxMeasurement(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
+                       'SourceFile',
                        'SimulationRun',
                        'SoftwareInfo',
                        'FluxSolution',
@@ -1092,13 +1107,15 @@ class FluxMeasurement(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement']} })
+    replicate: Optional[int] = Field(default=None, description="""Replicate number (1-based) for this flux measurement.""", ge=1, json_schema_extra = { "linkml_meta": {'domain_of': ['MIDMeasurement', 'FluxMeasurement', 'PoolSizeMeasurement']} })
 
 
 class PoolSizeMeasurement(ConfiguredBaseModel):
     """
     A measured metabolite pool size for a single metabolite.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/fluxo/schema/experiment'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000062',
+         'from_schema': 'https://w3id.org/fluxolink/experiment'})
 
     id: str = Field(default=..., description="""Unique identifier for the pool size measurement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
                        'Contributor',
@@ -1116,6 +1133,7 @@ class PoolSizeMeasurement(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
+                       'SourceFile',
                        'SimulationRun',
                        'SoftwareInfo',
                        'FluxSolution',
@@ -1158,6 +1176,7 @@ class PoolSizeMeasurement(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement']} })
+    replicate: Optional[int] = Field(default=None, description="""Replicate number (1-based) for this pool size measurement.""", ge=1, json_schema_extra = { "linkml_meta": {'domain_of': ['MIDMeasurement', 'FluxMeasurement', 'PoolSizeMeasurement']} })
 
 
 class NMRIsotopomerMeasurement(ConfiguredBaseModel):
@@ -1165,7 +1184,7 @@ class NMRIsotopomerMeasurement(ConfiguredBaseModel):
     A group of 13C NMR isotopomer measurements for one metabolite, providing positional labeling information via multiplet analysis.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000144',
-         'from_schema': 'https://w3id.org/fluxo/schema/experiment'})
+         'from_schema': 'https://w3id.org/fluxolink/experiment'})
 
     id: str = Field(default=..., description="""Unique identifier for the NMR measurement group.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
                        'Contributor',
@@ -1183,6 +1202,7 @@ class NMRIsotopomerMeasurement(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
+                       'SourceFile',
                        'SimulationRun',
                        'SoftwareInfo',
                        'FluxSolution',
@@ -1214,10 +1234,10 @@ class NMRIsotopomerDataPoint(ConfiguredBaseModel):
     """
     A single 13C NMR multiplet measurement for one carbon position.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/fluxo/schema/experiment'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/fluxolink/experiment'})
 
     atom_position: int = Field(default=..., description="""Carbon position index (1-based) in the metabolite.""", ge=1, json_schema_extra = { "linkml_meta": {'domain_of': ['NMRIsotopomerDataPoint']} })
-    multiplet_type: str = Field(default=..., description="""NMR multiplet type indicating the labeling state of neighboring carbons. S = singlet, DL = left doublet, DR = right doublet, DD = double doublet, T = triplet.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NMRIsotopomerDataPoint']} })
+    multiplet_type: NMRMultipletTypeEnum = Field(default=..., description="""NMR multiplet type indicating the labeling state of neighboring carbons. S = singlet, DL = left doublet, DR = right doublet, DD = double doublet, T = triplet.""", json_schema_extra = { "linkml_meta": {'domain_of': ['NMRIsotopomerDataPoint']} })
     value: float = Field(default=..., description="""Measured fractional abundance of this multiplet.""", ge=0.0, le=1.0, json_schema_extra = { "linkml_meta": {'domain_of': ['MIDDataPoint',
                        'FluxMeasurement',
                        'PoolSizeMeasurement',
@@ -1241,7 +1261,7 @@ class FluxRatioMeasurement(ConfiguredBaseModel):
     """
     A measured flux ratio between two or more reactions.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/fluxo/schema/experiment'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/fluxolink/experiment'})
 
     id: str = Field(default=..., description="""Unique identifier for the flux ratio measurement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
                        'Contributor',
@@ -1259,6 +1279,7 @@ class FluxRatioMeasurement(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
+                       'SourceFile',
                        'SimulationRun',
                        'SoftwareInfo',
                        'FluxSolution',
@@ -1296,7 +1317,7 @@ class PoolSizeRatioMeasurement(ConfiguredBaseModel):
     """
     A measured pool size ratio between two or more metabolites.
     """
-    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/fluxo/schema/experiment'})
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/fluxolink/experiment'})
 
     id: str = Field(default=..., description="""Unique identifier for the pool size ratio measurement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
                        'Contributor',
@@ -1314,6 +1335,7 @@ class PoolSizeRatioMeasurement(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
+                       'SourceFile',
                        'SimulationRun',
                        'SoftwareInfo',
                        'FluxSolution',
@@ -1347,12 +1369,63 @@ class PoolSizeRatioMeasurement(ConfiguredBaseModel):
                        'PoolSizeRatioMeasurement']} })
 
 
+class SourceFile(ConfiguredBaseModel):
+    """
+    Reference to a native MFA file (FluxML, MTF, FTBL, .mat, etc.). The schema references the file; Tier-2 classes optionally carry its parsed content.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000227',
+         'from_schema': 'https://w3id.org/fluxolink/experiment'})
+
+    id: str = Field(default=..., description="""Unique identifier for this source file record.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
+                       'Contributor',
+                       'Condition',
+                       'MetabolicNetworkModel',
+                       'NetworkMetabolite',
+                       'NetworkReaction',
+                       'FluxConstraint',
+                       'PoolSizeConstraint',
+                       'LabelingExperiment',
+                       'LabeledSource',
+                       'MIDMeasurement',
+                       'FluxMeasurement',
+                       'PoolSizeMeasurement',
+                       'NMRIsotopomerMeasurement',
+                       'FluxRatioMeasurement',
+                       'PoolSizeRatioMeasurement',
+                       'SourceFile',
+                       'SimulationRun',
+                       'SoftwareInfo',
+                       'FluxSolution',
+                       'FluxoDataset']} })
+    path: str = Field(default=..., description="""Relative path or URI to the file.""", json_schema_extra = { "linkml_meta": {'domain_of': ['SourceFile']} })
+    format: InputFormatEnum = Field(default=..., description="""Format of the file.""", json_schema_extra = { "linkml_meta": {'domain_of': ['SourceFile'], 'slot_uri': 'fluxo:FLUXO_0000229'} })
+    format_other: Optional[str] = Field(default=None, description="""Free-text file format, used when format is \"other\".""", json_schema_extra = { "linkml_meta": {'domain_of': ['SourceFile']} })
+    role: FileRoleEnum = Field(default=..., description="""Role this file plays in the dataset (network, measurements, tracer, etc.).""", json_schema_extra = { "linkml_meta": {'domain_of': ['SourceFile']} })
+    checksum: Optional[str] = Field(default=None, description="""\"algorithm:hash\" digest (e.g., \"sha256:abc123...\") for content-integrity verification.""", json_schema_extra = { "linkml_meta": {'domain_of': ['SourceFile']} })
+    media_type: Optional[str] = Field(default=None, description="""IANA media type / MIME type (e.g., \"application/xml\", \"text/csv\").""", json_schema_extra = { "linkml_meta": {'domain_of': ['SourceFile']} })
+    file_size_bytes: Optional[int] = Field(default=None, description="""Size of the file in bytes.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['SourceFile']} })
+    description: Optional[str] = Field(default=None, description="""Optional free-text description of the file contents.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation', 'SourceFile', 'FluxoDataset']} })
+
+    @field_validator('checksum')
+    def pattern_checksum(cls, v):
+        pattern=re.compile(r"^[a-z0-9]+:[0-9a-f]+$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid checksum format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid checksum format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+
 class SimulationRun(ConfiguredBaseModel):
     """
     A single simulation run linking an investigation, network model, and experiment to a specific software tool and its results.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000057',
-         'from_schema': 'https://w3id.org/fluxo/schema/simulation_run'})
+         'from_schema': 'https://w3id.org/fluxolink/simulation_run'})
 
     id: str = Field(default=..., description="""Unique identifier for the simulation run.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
                        'Contributor',
@@ -1370,6 +1443,7 @@ class SimulationRun(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
+                       'SourceFile',
                        'SimulationRun',
                        'SoftwareInfo',
                        'FluxSolution',
@@ -1387,11 +1461,13 @@ class SimulationRun(ConfiguredBaseModel):
     multistart_count: Optional[int] = Field(default=None, description="""Number of optimization restarts (for non-convex problems).""", ge=1, json_schema_extra = { "linkml_meta": {'domain_of': ['SimulationRun']} })
     random_seed: Optional[int] = Field(default=None, description="""Random seed for reproducibility of stochastic optimizers.""", json_schema_extra = { "linkml_meta": {'domain_of': ['SimulationRun']} })
     convergence_tolerance: Optional[float] = Field(default=None, description="""Solver convergence tolerance (e.g., 1e-6).""", json_schema_extra = { "linkml_meta": {'domain_of': ['SimulationRun']} })
-    isotopic_state_space: Optional[IsotopicStateSpaceEnum] = Field(default=None, description="""Isotopic state-space representation used for computation.""", json_schema_extra = { "linkml_meta": {'domain_of': ['SimulationRun'], 'slot_uri': 'fluxo:FLUXO_0000146'} })
     stop_time: Optional[float] = Field(default=None, description="""Simulation stop time for non-stationary (INST) MFA.""", json_schema_extra = { "linkml_meta": {'domain_of': ['SimulationRun']} })
     initial_values: Optional[FluxSolution] = Field(default=None, description="""Initial flux (and pool size) values for warm-starting the optimizer. Required in practice for isotope-based MFA (INCA/influx_si); optional for FBA. The conditional rule is deferred to Phase 5.""", json_schema_extra = { "linkml_meta": {'domain_of': ['SimulationRun']} })
     flux_solution: Optional[FluxSolution] = Field(default=None, description="""Estimated flux values from the simulation.""", json_schema_extra = { "linkml_meta": {'domain_of': ['SimulationRun']} })
     goodness_of_fit: Optional[GoodnessOfFit] = Field(default=None, description="""Goodness-of-fit statistics for the solution.""", json_schema_extra = { "linkml_meta": {'domain_of': ['SimulationRun']} })
+    isotopic_state_space: Optional[IsotopicStateSpaceEnum] = Field(default=None, description="""Isotopic state-space representation used for computation (isotopomer, cumomer, or EMU). A benchmarking-fairness parameter — tools differ in their native representation (13CFLUX2 cumomer, INCA cumomer/EMU, miemu EMU).""", json_schema_extra = { "linkml_meta": {'domain_of': ['SimulationRun'], 'slot_uri': 'fluxo:FLUXO_0000146'} })
+    input_files: Optional[list[SourceFile]] = Field(default=None, description="""Native input files used for this simulation run (network, measurements, tracers, constraints, configuration).""", json_schema_extra = { "linkml_meta": {'domain_of': ['SimulationRun'], 'slot_uri': 'fluxo:FLUXO_0000266'} })
+    output_files: Optional[list[SourceFile]] = Field(default=None, description="""Output / results files produced by this simulation run. Provenance for extracted results (NMDC has_output pattern).""", json_schema_extra = { "linkml_meta": {'domain_of': ['SimulationRun'], 'slot_uri': 'fluxo:FLUXO_0000284'} })
 
 
 class SoftwareInfo(ConfiguredBaseModel):
@@ -1399,7 +1475,7 @@ class SoftwareInfo(ConfiguredBaseModel):
     Information about the MFA software tool used for a simulation run.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000102',
-         'from_schema': 'https://w3id.org/fluxo/schema/simulation_run'})
+         'from_schema': 'https://w3id.org/fluxolink/simulation_run'})
 
     id: str = Field(default=..., description="""Unique identifier for this software info record.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
                        'Contributor',
@@ -1417,6 +1493,7 @@ class SoftwareInfo(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
+                       'SourceFile',
                        'SimulationRun',
                        'SoftwareInfo',
                        'FluxSolution',
@@ -1432,7 +1509,7 @@ class FluxSolution(ConfiguredBaseModel):
     The estimated flux values (and optionally pool sizes) that best explain the experimental data.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000159',
-         'from_schema': 'https://w3id.org/fluxo/schema/simulation_run'})
+         'from_schema': 'https://w3id.org/fluxolink/simulation_run'})
 
     id: str = Field(default=..., description="""Unique identifier for the flux solution.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
                        'Contributor',
@@ -1450,6 +1527,7 @@ class FluxSolution(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
+                       'SourceFile',
                        'SimulationRun',
                        'SoftwareInfo',
                        'FluxSolution',
@@ -1464,7 +1542,7 @@ class FluxResult(ConfiguredBaseModel):
     An estimated flux value for a single reaction, including uncertainty information.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000123',
-         'from_schema': 'https://w3id.org/fluxo/schema/simulation_run'})
+         'from_schema': 'https://w3id.org/fluxolink/simulation_run'})
 
     reaction_id: str = Field(default=..., description="""Reference to the reaction in the network model.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FluxConstraint', 'FluxMeasurement', 'FluxResult']} })
     flux_type: FluxTypeEnum = Field(default=..., description="""Type of flux (net, forward, backward, exchange).""", json_schema_extra = { "linkml_meta": {'domain_of': ['FluxMeasurement', 'FluxResult']} })
@@ -1500,7 +1578,7 @@ class PoolSizeResult(ConfiguredBaseModel):
     An estimated metabolite pool size from the flux solution.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000062',
-         'from_schema': 'https://w3id.org/fluxo/schema/simulation_run'})
+         'from_schema': 'https://w3id.org/fluxolink/simulation_run'})
 
     metabolite_id: str = Field(default=..., description="""Reference to the metabolite in the network model.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ReactionParticipant',
                        'PoolSizeConstraint',
@@ -1541,7 +1619,7 @@ class GoodnessOfFit(ConfiguredBaseModel):
     Statistical measures of how well the flux solution fits the experimental data.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000212',
-         'from_schema': 'https://w3id.org/fluxo/schema/simulation_run'})
+         'from_schema': 'https://w3id.org/fluxolink/simulation_run'})
 
     wssr: Optional[float] = Field(default=None, description="""Weighted sum of squared residuals (variance-weighted).""", json_schema_extra = { "linkml_meta": {'domain_of': ['GoodnessOfFit'], 'slot_uri': 'fluxo:FLUXO_0000086'} })
     degrees_of_freedom: Optional[int] = Field(default=None, description="""Degrees of freedom in the fit.""", json_schema_extra = { "linkml_meta": {'domain_of': ['GoodnessOfFit'], 'slot_uri': 'fluxo:FLUXO_0000030'} })
@@ -1554,7 +1632,7 @@ class FluxoDataset(ConfiguredBaseModel):
     Root container aggregating all studies, networks, experiments, and simulation runs in a fluxomics dataset.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'class_uri': 'fluxo:FLUXO_0000002',
-         'from_schema': 'https://w3id.org/fluxo/schema',
+         'from_schema': 'https://w3id.org/fluxolink',
          'tree_root': True})
 
     id: str = Field(default=..., description="""Unique identifier for this dataset.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
@@ -1573,6 +1651,7 @@ class FluxoDataset(ConfiguredBaseModel):
                        'NMRIsotopomerMeasurement',
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
+                       'SourceFile',
                        'SimulationRun',
                        'SoftwareInfo',
                        'FluxSolution',
@@ -1585,11 +1664,13 @@ class FluxoDataset(ConfiguredBaseModel):
                        'NetworkReaction',
                        'LabelingExperiment',
                        'FluxoDataset']} })
-    description: Optional[str] = Field(default=None, description="""Detailed description of the dataset contents.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation', 'FluxoDataset']} })
-    schema_version: Optional[str] = Field(default=None, description="""Version of the FLUXO schema this dataset conforms to.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FluxoDataset']} })
+    description: Optional[str] = Field(default=None, description="""Detailed description of the dataset contents.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation', 'SourceFile', 'FluxoDataset']} })
+    schema_version: Optional[str] = Field(default=None, description="""Version of the FluxoLink schema this dataset conforms to.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FluxoDataset']} })
     creation_date: Optional[date] = Field(default=None, description="""Date the dataset was created.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FluxoDataset']} })
     last_modified: Optional[date] = Field(default=None, description="""Date the dataset was last modified.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FluxoDataset']} })
     fluxo_ontology_version: Optional[str] = Field(default=None, description="""FLUXO ontology release version used for term mappings (e.g., \"2026-04-08\"). Pins the ontology version for traceability.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FluxoDataset']} })
+    dataset_type: Optional[DatasetTypeEnum] = Field(default=None, description="""Classification of this dataset by curation tier. When \"benchmark\", Tier-2 input content (networks, experiments, measurements) is required; when \"catalog\" or absent, it is optional.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FluxoDataset']} })
+    source_files: Optional[list[SourceFile]] = Field(default=None, description="""Native MFA files referenced by this dataset (FluxML, MTF, FTBL, .mat, etc.). Tier-1 provenance layer.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FluxoDataset']} })
     investigations: Optional[list[Investigation]] = Field(default=None, description="""All investigations in this dataset.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FluxoDataset']} })
     networks: Optional[list[MetabolicNetworkModel]] = Field(default=None, description="""All metabolic network models in this dataset.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FluxoDataset']} })
     experiments: Optional[list[LabelingExperiment]] = Field(default=None, description="""All labeling experiments in this dataset.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FluxoDataset']} })
@@ -1620,6 +1701,7 @@ NMRIsotopomerMeasurement.model_rebuild()
 NMRIsotopomerDataPoint.model_rebuild()
 FluxRatioMeasurement.model_rebuild()
 PoolSizeRatioMeasurement.model_rebuild()
+SourceFile.model_rebuild()
 SimulationRun.model_rebuild()
 SoftwareInfo.model_rebuild()
 FluxSolution.model_rebuild()

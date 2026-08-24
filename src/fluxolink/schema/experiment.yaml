@@ -1,11 +1,11 @@
-id: https://w3id.org/fluxo/schema/experiment
-name: fluxo-experiment
+id: https://w3id.org/fluxolink/experiment
+name: fluxolink-experiment
 title: FLUXO Experiment Module
 description: >-
   Isotope labeling experiment classes including tracer specifications,
   cultivation conditions, and MID / NMR / flux / pool-size measurements.
 
-license: MIT
+license: Apache-2.0
 
 prefixes:
   linkml: https://w3id.org/linkml/
@@ -88,6 +88,11 @@ classes:
         range: PoolSizeRatioMeasurement
         multivalued: true
         inlined_as_list: true
+      tracer_summary:
+        description: >-
+          Human-readable tracer description for catalog browsing
+          (e.g., "100% [1-13C] glucose"). Machine-readable spec
+          stays in labeled_sources / native files.
 
   LabeledSource:
     class_uri: fluxo:FLUXO_0000078
@@ -213,6 +218,12 @@ classes:
           "skyline", "in-house").
       comment:
         description: Optional free-text comment.
+      replicate:
+        description: >-
+          Replicate number (1-based) for this measurement group.
+          Carried by miemu; reported in published datasets.
+        range: integer
+        minimum_value: 1
       data_points:
         description: Individual MID measurement data points.
         range: MIDDataPoint
@@ -250,6 +261,7 @@ classes:
         required: true
 
   FluxMeasurement:
+    class_uri: fluxo:FLUXO_0000124
     description: >-
       A measured external flux value for a single reaction.
     attributes:
@@ -285,8 +297,14 @@ classes:
         range: float
       comment:
         description: Optional free-text comment.
+      replicate:
+        description: >-
+          Replicate number (1-based) for this flux measurement.
+        range: integer
+        minimum_value: 1
 
   PoolSizeMeasurement:
+    class_uri: fluxo:FLUXO_0000062
     description: >-
       A measured metabolite pool size for a single metabolite.
     attributes:
@@ -318,6 +336,11 @@ classes:
         range: float
       comment:
         description: Optional free-text comment.
+      replicate:
+        description: >-
+          Replicate number (1-based) for this pool size measurement.
+        range: integer
+        minimum_value: 1
 
   NMRIsotopomerMeasurement:
     class_uri: fluxo:FLUXO_0000144
@@ -368,6 +391,7 @@ classes:
           NMR multiplet type indicating the labeling state of neighboring
           carbons. S = singlet, DL = left doublet, DR = right doublet,
           DD = double doublet, T = triplet.
+        range: NMRMultipletTypeEnum
         required: true
       value:
         description: Measured fractional abundance of this multiplet.
@@ -430,3 +454,48 @@ classes:
         minimum_value: 0.0
       comment:
         description: Optional free-text comment.
+
+  SourceFile:
+    class_uri: fluxo:FLUXO_0000227
+    description: >-
+      Reference to a native MFA file (FluxML, MTF, FTBL, .mat, etc.).
+      The schema references the file; Tier-2 classes optionally carry
+      its parsed content.
+    attributes:
+      id:
+        description: Unique identifier for this source file record.
+        identifier: true
+        required: true
+      path:
+        description: >-
+          Relative path or URI to the file.
+        required: true
+      format:
+        description: Format of the file.
+        slot_uri: fluxo:FLUXO_0000229
+        range: InputFormatEnum
+        required: true
+      format_other:
+        description: >-
+          Free-text file format, used when format is "other".
+      role:
+        description: >-
+          Role this file plays in the dataset (network, measurements,
+          tracer, etc.).
+        range: FileRoleEnum
+        required: true
+      checksum:
+        description: >-
+          "algorithm:hash" digest (e.g., "sha256:abc123...") for
+          content-integrity verification.
+        pattern: "^[a-z0-9]+:[0-9a-f]+$"
+      media_type:
+        description: >-
+          IANA media type / MIME type (e.g., "application/xml",
+          "text/csv").
+      file_size_bytes:
+        description: Size of the file in bytes.
+        range: integer
+        minimum_value: 0
+      description:
+        description: Optional free-text description of the file contents.

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import yaml
 
-SCHEMA_DIR = Path(__file__).parent.parent / "src" / "fluxo_schema" / "schema"
+SCHEMA_DIR = Path(__file__).parent.parent / "src" / "fluxolink" / "schema"
 
 
 def _load_yaml(filename: str) -> dict:
@@ -18,10 +18,10 @@ class TestSchemaLoading:
     """Tests that all schema YAML files load without errors."""
 
     def test_main_schema_loads(self) -> None:
-        """Test that the main fluxo_schema.yaml loads."""
-        data = _load_yaml("fluxo_schema.yaml")
-        assert data["id"] == "https://w3id.org/fluxo/schema"
-        assert data["name"] == "fluxo-schema"
+        """Test that the main fluxolink.yaml loads."""
+        data = _load_yaml("fluxolink.yaml")
+        assert data["id"] == "https://w3id.org/fluxolink"
+        assert data["name"] == "fluxolink"
 
     def test_enumerations_schema_loads(self) -> None:
         """Test that the enumerations schema loads."""

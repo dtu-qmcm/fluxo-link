@@ -1,3 +1,5 @@
+# .pre-commit-config.yaml — code-quality gates for the FluxoLink project.
+# Run `uv run pre-commit install` to enable, `uv run pre-commit run --all-files` to test.
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -11,7 +13,23 @@ repos:
         args: [--maxkb=500]
       - id: check-merge-conflict
       - id: detect-private-key
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-case-conflict
 
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        args: [--config-file, .yamllint.yaml]
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+      - id: codespell
+        args:
+          - --skip=src/fluxolink/datamodel/*.py,project/*,docs/*,.venv/*
+          - --ignore-words-list=ist,onetwo
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.11.2
@@ -28,3 +46,29 @@ repos:
           - pydantic>=2.0
         args: [--ignore-missing-imports]
         files: "^src/"
+
+  - repo: local
+    hooks:
+      - id: linkml-lint
+        name: linkml-lint (schema)
+        description: Lint the LinkML schema for structural issues.
+        entry: uv run linkml-lint --ignore-warnings src/fluxolink/schema/fluxolink.yaml
+        language: system
+        files: ^src/fluxolink/schema/.*\.yaml$
+        pass_filenames: false
+
+      - id: linkml-validate-examples
+        name: linkml-validate (examples)
+        description: Validate example datasets against the schema.
+        entry: uv run linkml-validate -s src/fluxolink/schema/fluxolink.yaml
+        language: system
+        files: ^examples/valid/.*\.yaml$
+        pass_filenames: true
+
+      - id: gen-pydantic-freshness
+        name: gen-pydantic freshness
+        description: Fail if the generated Pydantic datamodel is out of sync with the schema.
+        entry: scripts/check_pydantic_freshness.sh
+        language: system
+        files: ^src/fluxolink/schema/.*\.yaml$
+        pass_filenames: false
