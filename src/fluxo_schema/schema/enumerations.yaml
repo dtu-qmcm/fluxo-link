@@ -1,0 +1,304 @@
+id: https://w3id.org/fluxo/schema/enumerations
+name: fluxo-enumerations
+title: FLUXO Enumerations
+description: >-
+  Semantic enumerations backed by FLUXO ontology terms for software,
+  methods, file formats, analytical methods, and flux types.
+
+license: Apache-2.0
+
+prefixes:
+  linkml: https://w3id.org/linkml/
+  fluxo: http://purl.obolibrary.org/obo/
+
+default_prefix: fluxo
+default_range: string
+
+imports:
+  - linkml:types
+
+enums:
+  MFASoftwareEnum:
+    description: >-
+      13C-MFA software tools as defined in the FLUXO ontology.
+    permissible_values:
+      freeflux:
+        description: FreeFlux - open source Python package for MFA
+        meaning: fluxo:FLUXO_0000117
+      13CFLUX2:
+        description: 13CFLUX2 - MFA software using FluxML
+        meaning: fluxo:FLUXO_0000244
+      influx_si:
+        description: influx_si - MFA software with FTBL input
+        meaning: fluxo:FLUXO_0000108
+      INCA:
+        description: >-
+          INCA - Isotopomer Network Compartmental Analysis (MATLAB)
+        meaning: fluxo:FLUXO_0000249
+      mfapy:
+        description: MFApy - Python MFA package
+        meaning: fluxo:FLUXO_0000111
+      OpenFLUX2:
+        description: OpenFLUX2 - open source MFA tool
+        meaning: fluxo:FLUXO_0000112
+      BayFlux:
+        description: BayFlux - Bayesian flux estimation
+        meaning: fluxo:FLUXO_0000120
+      other:
+        description: >-
+          Other software not listed; specify via the companion
+          software_name_other free-text slot.
+
+  MFAMethodEnum:
+    description: >-
+      Metabolic flux analysis method types from the FLUXO ontology.
+      Covers both isotope-based methods (IST/INST/dynamic/13C) and
+      stoichiometry-based methods (FBA, constraint-based).
+    permissible_values:
+      IST_MFA:
+        description: Isotopically stationary MFA
+        meaning: fluxo:FLUXO_0000043
+      INST_MFA:
+        description: Isotopically non-stationary MFA
+        meaning: fluxo:FLUXO_0000044
+      dynamic_MFA:
+        description: Dynamic isotope-based MFA
+        meaning: fluxo:FLUXO_0000045
+      I_MFA:
+        description: >-
+          Isotope-based metabolic flux analysis (parent of 13C-MFA,
+          IST-MFA, INST-MFA)
+        meaning: fluxo:FLUXO_0000041
+      FBA:
+        description: Flux balance analysis (stoichiometry-based, no isotope)
+        meaning: fluxo:FLUXO_0000039
+
+  InputFormatEnum:
+    description: >-
+      File formats used as input for MFA software tools.
+    permissible_values:
+      FluxML:
+        description: FluxML XML format
+        meaning: fluxo:FLUXO_0000098
+      FTBL:
+        description: FTBL tabular format
+        meaning: fluxo:FLUXO_0000100
+      MTF:
+        description: MTF format
+        meaning: fluxo:FLUXO_0000101
+      freeflux_csv:
+        description: FreeFlux CSV format
+        meaning: fluxo:FLUXO_0000230
+      INCA_mat:
+        description: INCA MATLAB .mat format
+        meaning: fluxo:FLUXO_0000231
+      other:
+        description: >-
+          Other input format not listed; specify via the companion
+          input_format_other free-text slot.
+
+  AnalyticalMethodEnum:
+    description: >-
+      Analytical measurement methods for isotopologue data.
+    permissible_values:
+      GC_MS:
+        description: Gas chromatography-mass spectrometry
+        meaning: fluxo:FLUXO_0000192
+      LC_MS:
+        description: Liquid chromatography-mass spectrometry
+        meaning: fluxo:FLUXO_0000191
+      tandem_MS:
+        description: Tandem mass spectrometry (MS/MS)
+        meaning: fluxo:FLUXO_0000193
+      IRMS:
+        description: Isotope ratio mass spectrometry
+        meaning: fluxo:FLUXO_0000194
+      NMR:
+        description: Nuclear magnetic resonance
+        meaning: fluxo:FLUXO_0000195
+      other:
+        description: >-
+          Other analytical method not listed; specify via the companion
+          analytical_method_other free-text slot.
+
+  FluxTypeEnum:
+    description: >-
+      Types of metabolic flux values.
+    permissible_values:
+      net:
+        description: Net flux (forward minus backward)
+        meaning: fluxo:FLUXO_0000027
+      forward:
+        description: Forward flux
+        meaning: fluxo:FLUXO_0000025
+      backward:
+        description: Backward (reverse) flux
+        meaning: fluxo:FLUXO_0000026
+      exchange:
+        description: Exchange flux (min of forward and backward)
+        meaning: fluxo:FLUXO_0000028
+
+  AtomAnnotationTypeEnum:
+    description: >-
+      Annotation notation types for atom transitions.
+    permissible_values:
+      letter:
+        description: Letter-based atom annotation (a-z, A-Z)
+        meaning: fluxo:FLUXO_0000073
+      FluxML:
+        description: FluxML-defined atom mapping notation
+        meaning: fluxo:FLUXO_0000074
+      InChI:
+        description: InChI-based atom mapping notation
+        meaning: fluxo:FLUXO_0000075
+
+  ReactionTypeEnum:
+    description: >-
+      Types of reactions in a metabolic network model.
+    permissible_values:
+      metabolic:
+        description: Standard metabolic reaction
+        meaning: fluxo:FLUXO_0000005
+      transport:
+        description: Transport reaction between compartments
+        meaning: fluxo:FLUXO_0000128
+      exchange:
+        description: Exchange reaction at network boundary
+        meaning: fluxo:FLUXO_0000202
+      biomass:
+        description: Abstract biomass reaction
+        meaning: fluxo:FLUXO_0000067
+      demand:
+        description: Demand reaction
+        meaning: fluxo:FLUXO_0000201
+      sink:
+        description: Sink reaction
+        meaning: fluxo:FLUXO_0000203
+
+  ConstraintTypeEnum:
+    description: >-
+      Types of flux constraints.
+    permissible_values:
+      equality:
+        description: Flux equality constraint (fixed linear combination)
+        meaning: fluxo:FLUXO_0000152
+      inequality:
+        description: Flux inequality constraint (bounds on combination)
+        meaning: fluxo:FLUXO_0000153
+      bound:
+        description: Individual flux bound (lower/upper)
+        meaning: fluxo:FLUXO_0000206
+
+  ScaleMethodEnum:
+    description: >-
+      Scaling methods for measurement groups.
+    permissible_values:
+      auto:
+        description: Automatic scaling
+      one:
+        description: Scale to one
+
+  ConfidenceIntervalMethodEnum:
+    description: >-
+      Method used to compute confidence intervals on estimated fluxes or
+      pool sizes. No FLUXO terms; left unmapped.
+    permissible_values:
+      profile_likelihood:
+        description: Profile-likelihood / parameter continuation
+      parameter_continuation:
+        description: Parameter continuation (sensitivity-based)
+      bootstrap:
+        description: Monte Carlo bootstrap resampling
+      grid_search:
+        description: Grid search over parameter space
+      other:
+        description: Other method not listed
+
+  NMRMultipletTypeEnum:
+    description: >-
+      13C NMR multiplet types indicating the labeling state of
+      neighboring carbon atoms. No FLUXO terms; left unmapped.
+    permissible_values:
+      S:
+        description: Singlet — carbon unlabeled, neighbors unlabeled.
+      DL:
+        description: Left doublet — carbon labeled, left neighbor unlabeled.
+      DR:
+        description: Right doublet — carbon labeled, right neighbor unlabeled.
+      DD:
+        description: Double doublet — carbon labeled, both neighbors unlabeled.
+      T:
+        description: Triplet — carbon labeled, both neighbors labeled.
+
+  IsotopicStateSpaceEnum:
+    description: >-
+      Isotopic state-space representations used in MFA computation.
+      Tools differ in their native representation (13CFLUX2 uses
+      cumomer, INCA uses cumomer or EMU, miemu uses EMU). Mapped to
+      subclasses of FLUXO_0000146 (isotopic state-space
+      representation).
+    permissible_values:
+      isotopomer:
+        description: >-
+          Full isotopomer representation (2^n states for n traced
+          atoms). Most expressive; used by INCA and OpenFLUX2.
+        meaning: fluxo:FLUXO_0000148
+      cumomer:
+        description: >-
+          Cumulative isotopomer representation. Reduced state space
+          via cumulative mass-isotopomer sums; used by 13CFLUX2 and
+          INCA.
+        meaning: fluxo:FLUXO_0000149
+      EMU:
+        description: >-
+          Elementary Metabolite Unit representation. Minimal state
+          space via EMU decomposition; used by miemu and INCA.
+        meaning: fluxo:FLUXO_0000150
+
+  FileRoleEnum:
+    description: >-
+      Role a source file plays in a fluxomics dataset. Mapped to the
+      FLUXO concept the file content represents (not a "file role"
+      per se — FLUXO has no file-role hierarchy; the content class is
+      the closest semantic anchor).
+    permissible_values:
+      network:
+        description: Metabolic network model file.
+        meaning: fluxo:FLUXO_0000127
+      measurements:
+        description: Measurement data file (MID, NMR, flux, pool size).
+        meaning: fluxo:FLUXO_0000089
+      tracer:
+        description: Tracer / labeled source specification file.
+        meaning: fluxo:FLUXO_0000078
+      constraints:
+        description: Flux or pool size constraint file.
+        meaning: fluxo:FLUXO_0000068
+      simulation:
+        description: Simulation configuration / setup file.
+        meaning: fluxo:FLUXO_0000057
+      results:
+        description: Simulation output / results file.
+        meaning: fluxo:FLUXO_0000159
+      configuration:
+        description: Tool or run configuration file.
+      other:
+        description: >-
+          Other role not listed; specify via the SourceFile
+          description free-text slot.
+
+  DatasetTypeEnum:
+    description: >-
+      Classification of a FluxoDataset by curation tier. FLUXO has no
+      benchmark/catalog dataset distinction; left unmapped pending
+      ontology terms.
+    permissible_values:
+      benchmark:
+        description: >-
+          Tier-2-complete dataset carrying input ground truth
+          (network + experiment + measurements). Subject to the
+          VALIDATION_REQUIREMENTS ruleset.
+      catalog:
+        description: >-
+          Tier-1 dataset cataloging results with minimal provenance;
+          Tier-2 input content is optional.
