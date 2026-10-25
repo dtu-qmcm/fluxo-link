@@ -1,0 +1,35 @@
+# INVALID FluxoDataset — used for negative validation tests.
+# Intentionally omits fields that Phase 3j marks required:
+#   - TracerIsotopomer.tracer_fraction
+#   - TracerIsotopomer.isotopic_purity
+#   - MIDDataPoint.standard_deviation
+# `linkml-validate` MUST reject this file.
+id: BAD_DS
+name: Invalid dataset (missing required fields)
+conditions:
+  - id: COND_BAD
+    organism_name: Escherichia coli
+    strain: K-12
+    specific_growth_rate: 0.4
+    growth_rate_unit: 1/h
+
+experiments:
+  - id: EXP_BAD
+    investigation_id: INV1
+    stationary: true
+    condition: COND_BAD
+    labeled_sources:
+      - id: SRC_BAD
+        metabolite_id: A
+        tracers:
+          - labeling_pattern: "010"
+            # MISSING: tracer_fraction, isotopic_purity (both required)
+    mid_measurements:
+      - id: M_BAD
+        metabolite_id: F
+        atom_positions: "1,2,3"
+        analytical_method: GC_MS
+        data_points:
+          - isotopologue_index: 0
+            value: 0.5
+            # MISSING: standard_deviation (required)

@@ -1,0 +1,43 @@
+# INVALID FluxoDataset — used for negative validation tests.
+#
+# This document declares `dataset_type: benchmark`, which asserts that it
+# carries Tier-2 input ground truth, but supplies neither `networks` nor
+# `experiments` — the input content a benchmark is measured against. It is
+# otherwise well-formed: the same content at `dataset_type: catalog` is valid
+# (see examples/valid/simple_model_mtf_catalog.yaml).
+#
+# The FluxoDataset rule `benchmark_tier_requires_input_ground_truth` MUST
+# reject it, naming both missing blocks. This is the negative half of the
+# tier fix: relaxing SimulationRun.network_model_id to `recommended` must not
+# silently make input ground truth optional for benchmark datasets too.
+id: BAD_DS_benchmark_no_inputs
+name: Invalid dataset (benchmark tier without input ground truth)
+schema_version: "0.1.0"
+dataset_type: benchmark
+
+source_files:
+  - id: SF_netw
+    path: simple_model.netw
+    format: MTF
+    role: network
+
+investigations:
+  - id: INV_simple_model
+    name: simple_model MTF round-trip
+    contributors:
+      - id: CONTRIB_unknown
+        name: Unknown
+
+# No `networks` and no `experiments` — legal at the catalog tier, a rule
+# violation at the benchmark tier.
+
+simulation_runs:
+  - id: RUN_influx_si
+    investigation_id: INV_simple_model
+    fluxomics_method: IST_MFA
+    software:
+      id: SW_influx_si
+      software_name: influx_si
+      version: "7.4.3"
+    input_format: MTF
+    optimization_method: nlsic

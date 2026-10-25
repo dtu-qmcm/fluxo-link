@@ -1,0 +1,94 @@
+# WAY 2 of 2 for the INCA corpus — "record the dataset, not its contents".
+#
+# Source: fluxomics_data_converter/data/benchmark/INCA/EC.m (394 lines, 18.9 kB).
+# A MATLAB *script* that builds the model, attaches data, and calls simulate().
+#
+# THE HEADLINE PROBLEM AT THIS TIER FOR INCA: the "dataset" is executable code.
+# One .m file is network + tracer + measurements + flux data + solver options +
+# the invocation itself, and none of it is separable by file. Referencing the
+# file records that it exists and nothing about what it contains or does.
+id: FLUXO_DS_ec_inca_catalog
+name: E. coli INCA benchmark script record (catalog tier)
+description: >-
+  Provenance record for the INCA EC.m forward-simulation runtime benchmark.
+schema_version: "0.1.0"
+dataset_type: catalog
+fluxo_ontology_version: "2026-03-03"
+
+source_files:
+  # LOST: InputFormatEnum has INCA_mat but no value for a .m MATLAB script.
+  # INCA_mat is the binary *results* container; every real INCA input is a
+  # script. So the only honest option is `other` + format_other (Phase 3t-11).
+  - id: SF_ec_m
+    path: EC.m
+    format: other
+    format_other: INCA MATLAB script (.m)
+    # LOST: as with FluxML, one file plays every role at once and
+    # SourceFile.role is single-valued. Recorded once as `configuration`.
+    role: configuration
+    checksum: "sha256:d5bf12e7aeebe76276299a65942f64b4543766f050b195754b07d394c64f59d3"
+    media_type: text/x-matlab
+    file_size_bytes: 18906
+    description: >-
+      68 reactions, ~66 metabolites (never declared — derived from reaction
+      strings), 2 tracers on Gluc.ext, 33 msdata fragments with no values,
+      7 flux measurements, Suc/Fum symmetry, 7 m.options settings, 92 initial
+      flux values, 66 initial pool sizes, then simulate() in a timing loop.
+
+investigations:
+  - id: INV_ec_inca
+    name: E. coli INCA runtime benchmark
+    contributors:
+      - id: CONTRIB_unknown
+        name: Unknown
+
+# No `networks` block: the 68-reaction network is defined inline in the EC.m
+# script (SF_ec_m) and stays there. Nothing is fabricated to stand in for it.
+
+simulation_runs:
+  - id: RUN_ec_inca
+    investigation_id: INV_ec_inca
+    # From m.options.sim_ss = false.
+    fluxomics_method: INST_MFA
+    software:
+      id: SW_inca
+      software_name: INCA
+      # FABRICATED: no INCA script records the toolbox version.
+      version: unknown
+    input_format: other
+    input_format_other: INCA MATLAB script (.m)
+    # FABRICATED AND WRONG: EC.m never calls estimate(). It calls simulate()
+    # nine times inside a timing loop — this is a forward-simulation runtime
+    # benchmark, not a fit. There is no run_mode slot to say so, and
+    # optimization_method is required, so the document is forced to assert an
+    # optimiser that was never used.
+    optimization_method: least_squares
+    isotopic_state_space: EMU
+    # LOST — m.options, all seven settings:
+    #   int_tspan = 0:8/3600:(8*8/3600)  (9 time points)  -> no grid slot
+    #   sim_tunit = 'h'                                   -> no time-unit slot
+    #   fit_reinit = true                                 -> no slot
+    #   sim_ss = false            -> only via fluxomics_method above
+    #   sim_sens = false                                  -> no slot
+    #   int_reltol = 1e-10        -> convergence_tolerance is an OPTIMISER
+    #                                tolerance, not an integrator one; recording
+    #                                it there would be a category error, so it
+    #                                is dropped
+    #   int_timeout = 10000                               -> no slot
+    # LOST: m.rates.flx.lb = 1e-7 and .ub = 1e7 are SCALARS broadcast to all 92
+    # flux variables. Nothing can express "global default bound".
+    # LOST: m.states{'Glyc.ext'}.bal = false (metabolite excluded from the mass
+    # balance) — no is_balanced slot.
+    # LOST: m.mets{'Suc'}.sym and m.mets{'Fum'}.sym (rotate180, atommap
+    # '1:4 2:3 3:2 4:1') — metabolite-level symmetry has no slot at all.
+    # LOST: mod2stoich(m)' re-projects flx.val onto the feasible space, so the
+    # 92 literals in the file are NOT the values actually used.
+    # LOST: the wall-clock timing that is this script's entire output.
+    input_files:
+      - id: SF_ec_m_in
+        path: EC.m
+        format: other
+        format_other: INCA MATLAB script (.m)
+        role: configuration
+        checksum: "sha256:d5bf12e7aeebe76276299a65942f64b4543766f050b195754b07d394c64f59d3"
+    # No results: EC.m produces timings, not fitted fluxes.

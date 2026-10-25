@@ -33,3 +33,7 @@ schema-lint:
 # Generate HTML documentation
 doc:
     uv run gen-doc -d docs/ src/fluxolink/schema/fluxolink.yaml
+
+# Regenerate the draw.io-editable ER diagram from the schema
+erd:
+    uv run python scripts/gen_erd.py

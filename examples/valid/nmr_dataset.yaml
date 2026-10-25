@@ -1,0 +1,97 @@
+# Valid FluxoDataset exercising the 13C NMR isotopomer measurement classes
+# (NMRIsotopomerMeasurement / NMRIsotopomerDataPoint), grounded in the toy
+# model from fluxomics_data_converter/data/MTF_tests (metabolites E, F).
+#
+# NOTE: the schema models NMR as per-carbon multiplet fractions
+# (S/DL/DR/DD/T). The MTF `.miso` "C13NMR" rows use a positional-isotopomer
+# notation instead ("010", "110", ...) — a different representation the
+# current NMR classes do not capture. See the review note accompanying this
+# dataset.
+id: FLUXO_DS_nmr_toy
+name: NMR isotopomer demonstration dataset
+description: >-
+  Minimal network (A -> E -> F) with a 13C NMR multiplet measurement on the
+  product F, demonstrating the NMRIsotopomerMeasurement structure.
+schema_version: "0.1.0"
+
+conditions:
+  - id: COND1
+    organism_name: Escherichia coli
+    strain: K-12 MG1655
+    specific_growth_rate: 0.35
+    growth_rate_unit: 1/h
+
+investigations:
+  - id: INV1
+    name: NMR flux investigation
+
+networks:
+  - id: NET1
+    name: NMR toy network
+    compartments: [c]
+    metabolites:
+      - {id: A, compartment: c, n_tracked_atoms: 3}
+      - {id: E, compartment: c, n_tracked_atoms: 3}
+      - {id: F, compartment: c, n_tracked_atoms: 3}
+    reactions:
+      - id: R1
+        reversibility: false
+        reaction_type: metabolic
+        reactants: [{metabolite_id: A}]
+        products: [{metabolite_id: E}]
+        atom_transition_variants:
+          - variant_id: R1___1
+            transitions:
+              - {reactant_metabolite_id: A, reactant_atom_index: 0, product_metabolite_id: E, product_atom_index: 0}
+              - {reactant_metabolite_id: A, reactant_atom_index: 1, product_metabolite_id: E, product_atom_index: 1}
+              - {reactant_metabolite_id: A, reactant_atom_index: 2, product_metabolite_id: E, product_atom_index: 2}
+      - id: R2
+        reversibility: false
+        reaction_type: metabolic
+        reactants: [{metabolite_id: E}]
+        products: [{metabolite_id: F}]
+      - id: F_out
+        reversibility: false
+        reaction_type: sink
+        reactants: [{metabolite_id: F}]
+
+experiments:
+  - id: EXP1
+    name: NMR labeling experiment
+    investigation_id: INV1
+    stationary: true
+    condition: COND1
+    labeled_sources:
+      - id: SRC1
+        metabolite_id: A
+        input_type: isotopomer
+        tracers:
+          - {labeling_pattern: "111", tracer_fraction: 0.2, isotopic_purity: 0.99}
+          - {labeling_pattern: "100", tracer_fraction: 0.8, isotopic_purity: 0.99}
+    nmr_measurements:
+      - id: NMR_F
+        metabolite_id: F
+        analytical_method: NMR
+        data_points:
+          - {atom_position: 1, multiplet_type: S, value: 0.42, standard_deviation: 0.02}
+          - {atom_position: 2, multiplet_type: DD, value: 0.51, standard_deviation: 0.02}
+          - {atom_position: 3, multiplet_type: DL, value: 0.33, standard_deviation: 0.02}
+
+simulation_runs:
+  - id: RUN_MFA
+    investigation_id: INV1
+    network_model_id: NET1
+    experiment_id: [EXP1]
+    fluxomics_method: I_MFA
+    software:
+      id: SW1
+      software_name: influx_si
+      version: "7.1"
+    input_format: MTF
+    optimization_method: least_squares
+    flux_solution:
+      id: SOL1
+      flux_results:
+        - {reaction_id: R1, flux_type: net, value: 100.0, flux_unit: mmol/gDW/h}
+        - {reaction_id: R2, flux_type: net, value: 100.0, flux_unit: mmol/gDW/h}
+        - {reaction_id: F_out, flux_type: net, value: 100.0, flux_unit: mmol/gDW/h}

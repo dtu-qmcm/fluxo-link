@@ -1,0 +1,78 @@
+# A benchmark-tier dataset whose only run is stoichiometry-based.
+#
+# Acceptance fixture for the 2026-09-18 rule change. Before it, the
+# FluxoDataset tier rule required `experiments` for every benchmark, so this
+# document could only validate by fabricating a LabelingExperiment — which in
+# turn requires labeled_sources with a TracerIsotopomer carrying
+# tracer_fraction and isotopic_purity. Inventing a tracer for a method that
+# has none is exactly the placeholder-network defect removed on 2026-08-24.
+#
+# The network IS still required at this tier: a benchmark is benchmarked
+# against materialised input ground truth.
+id: FBA_BENCH
+name: Constraint-based benchmark, no labeling experiment
+description: >-
+  Minimal FBA benchmark. Carries a materialised network and a constraint_based
+  run, and deliberately no experiments, no tracer and no atom transitions.
+dataset_type: benchmark
+schema_version: "0.1.0"
+
+conditions:
+  - id: COND_FBA
+    organism_name: Escherichia coli
+    strain: K-12 MG1655
+    specific_growth_rate: 0.4
+    growth_rate_unit: 1/h
+
+investigations:
+  - id: INV_FBA
+    name: Constraint-based flux balance investigation
+    investigation_type: FBA
+
+networks:
+  - id: NET_FBA
+    name: Toy stoichiometric network
+    # No n_tracked_atoms and no atom_transition_variants: a stoichiometry-based
+    # method never reads them.
+    metabolites:
+      - id: A
+        name: Substrate A
+      - id: B
+        name: Intermediate B
+    reactions:
+      - id: R1
+        name: A -> B
+        reversibility: false
+        reaction_type: metabolic
+        reactants:
+          - metabolite_id: A
+            stoichiometry: 1.0
+        products:
+          - metabolite_id: B
+            stoichiometry: 1.0
+      - id: B_out
+        name: B efflux
+        reversibility: false
+        reaction_type: demand
+        reactants:
+          - metabolite_id: B
+            stoichiometry: 1.0
+
+simulation_runs:
+  - id: RUN_FBA
+    investigation_id: INV_FBA
+    network_model_id: NET_FBA
+    fluxomics_method: constraint_based
+    condition: COND_FBA
+    software:
+      id: SW_FBA
+      software_name: other
+      software_name_other: COBRApy
+      version: "0.29.0"
+    optimization_method: simplex
+    objective_function: maximize v(B_out)
+    flux_solution:
+      id: SOL_FBA
+      flux_results:
+        - {reaction_id: R1, flux_type: net, value: 10.0, flux_unit: mmol/gDW/h}
+        - {reaction_id: B_out, flux_type: net, value: 10.0, flux_unit: mmol/gDW/h}

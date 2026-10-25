@@ -1,0 +1,99 @@
+# WAY 2 of 2 for the FreeFlux corpus — "record the dataset, not its contents".
+#
+# Source: simple_model/roundtrip_test/freeflux_from_fml/ (4 TSVs).
+# Runnability is assessed by scripts/check_runnable.py.
+#
+# THE HEADLINE PROBLEM AT THIS TIER FOR FreeFlux: the file set is genuinely
+# incomplete. There is NO tracer file, because FreeFlux sets the labeling
+# strategy through its Python API, not a file. A record that only references
+# files therefore records a dataset that CANNOT be run — and the schema has no
+# way to say so, because `role: tracer` is simply absent rather than declared
+# missing.
+id: FLUXO_DS_simple_model_freeflux_catalog
+name: simple_model — FreeFlux TSV set record (catalog tier)
+description: >-
+  Provenance record for the FreeFlux TSV file set converted from FluxML.
+schema_version: "0.1.0"
+dataset_type: catalog
+fluxo_ontology_version: "2026-03-03"
+
+source_files:
+  - id: SF_reactions
+    path: reactions.tsv
+    format: freeflux_csv
+    role: network
+    checksum: "sha256:55fb747317194287034c3f466c430ef9566003c0d572bc6d73779dab5da3c297"
+    media_type: text/tab-separated-values
+    file_size_bytes: 220
+    description: 8 reactions, 6 pools, letter atom maps, no external pools
+  - id: SF_mdvs
+    path: measured_MDVs.tsv
+    format: freeflux_csv
+    role: measurements
+    checksum: "sha256:5422d81bfb37e2975d4608eadd15be7879ebc0cb1acff853ec094f5de22fec0f"
+    file_size_bytes: 137
+    description: one MDV row, fragment F_123, comma-joined mean and sd vectors
+  - id: SF_measured_fluxes
+    path: measured_fluxes.tsv
+    format: freeflux_csv
+    role: measurements
+    checksum: "sha256:5f497ff3fdb887865e42414c59dfd5d1b2b93a07d697d199d37fc536f0650257"
+    file_size_bytes: 34
+    description: measured net flux R1 = 100.0 +/- 0.1
+  - id: SF_fluxes
+    path: fluxes.tsv
+    format: freeflux_csv
+    role: simulation
+    checksum: "sha256:a33d1d2d190bbfdcae7dc3bbbe26878c0c4674d024831fa4126bc2d34f7847dd"
+    file_size_bytes: 87
+    description: preset net fluxes for forward simulation
+
+investigations:
+  - id: INV_simple_model
+    name: simple_model FreeFlux round-trip
+    contributors:
+      - id: CONTRIB_unknown
+        name: Unknown
+
+# No `networks` block: the reaction content stays in SF_reactions. Nothing
+# stands in for it — network_model_id is `recommended`, and materialised input
+# content is required only at `dataset_type: benchmark`.
+
+simulation_runs:
+  - id: RUN_freeflux_planned
+    investigation_id: INV_simple_model
+    fluxomics_method: IST_MFA
+    software:
+      id: SW_freeflux
+      software_name: freeflux
+      version: unknown
+    input_format: freeflux_csv
+    optimization_method: slsqp
+    # LOST: everything FreeFlux sets through its API rather than a file —
+    # set_labeling_strategy (the tracer), set_flux_bounds, n_runs,
+    # set_unbalanced_metabolites, prepare(dilution_from=...), tol, max_iters,
+    # and which of FBAModel / Simulator / Fitter was used. None has a slot, and
+    # none is in the file set either, so no amount of file-referencing recovers
+    # a runnable configuration.
+    input_files:
+      - id: SF_reactions_in
+        path: reactions.tsv
+        format: freeflux_csv
+        role: network
+        checksum: "sha256:55fb747317194287034c3f466c430ef9566003c0d572bc6d73779dab5da3c297"
+      - id: SF_mdvs_in
+        path: measured_MDVs.tsv
+        format: freeflux_csv
+        role: measurements
+        checksum: "sha256:5422d81bfb37e2975d4608eadd15be7879ebc0cb1acff853ec094f5de22fec0f"
+      - id: SF_measured_fluxes_in
+        path: measured_fluxes.tsv
+        format: freeflux_csv
+        role: measurements
+        checksum: "sha256:5f497ff3fdb887865e42414c59dfd5d1b2b93a07d697d199d37fc536f0650257"
+      - id: SF_fluxes_in
+        path: fluxes.tsv
+        format: freeflux_csv
+        role: simulation
+        checksum: "sha256:a33d1d2d190bbfdcae7dc3bbbe26878c0c4674d024831fa4126bc2d34f7847dd"
+    # No results: this file set has none.

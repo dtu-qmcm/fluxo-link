@@ -1,0 +1,340 @@
+# WAY 1 of 2 for the FreeFlux corpus — "materialise the content".
+#
+# Source: fluxomics_data_converter/data/simple_model/roundtrip_test/freeflux_from_fml/
+# (reactions.tsv, measured_MDVs.tsv, measured_fluxes.tsv, fluxes.tsv).
+#
+# This is the SAME eight-reaction network as simple_model_mtf_roundtrip.yaml, so
+# the two files are a controlled comparison of what each format loses.
+id: FLUXO_DS_simple_model_freeflux
+name: simple_model — FreeFlux TSV set
+description: >-
+  Eight-reaction toy network as FreeFlux TSVs, converted from FluxML. Same model
+  as the MTF encoding; differences below are format artefacts, not model changes.
+schema_version: "0.1.0"
+dataset_type: benchmark
+fluxo_ontology_version: "2026-03-03"
+
+source_files:
+  - id: SF_reactions
+    path: reactions.tsv
+    # LOST: InputFormatEnum's FreeFlux value is `freeflux_csv`, but FreeFlux's
+    # reader raises TypeError on .csv and accepts only .tsv and Excel. The enum
+    # value is a misnomer for every file in this set (Phase 3t-11).
+    format: freeflux_csv
+    role: network
+    checksum: "sha256:55fb747317194287034c3f466c430ef9566003c0d572bc6d73779dab5da3c297"
+    media_type: text/tab-separated-values
+    file_size_bytes: 220
+  - id: SF_mdvs
+    path: measured_MDVs.tsv
+    format: freeflux_csv
+    role: measurements
+    checksum: "sha256:5422d81bfb37e2975d4608eadd15be7879ebc0cb1acff853ec094f5de22fec0f"
+    file_size_bytes: 137
+  - id: SF_measured_fluxes
+    path: measured_fluxes.tsv
+    format: freeflux_csv
+    role: measurements
+    checksum: "sha256:5f497ff3fdb887865e42414c59dfd5d1b2b93a07d697d199d37fc536f0650257"
+    file_size_bytes: 34
+  # LOST: fluxes.tsv holds PRESET flux values fed to a forward simulation
+  # (FreeFlux `set_fluxes_from_file`). FileRoleEnum has no `parameters` /
+  # `initial_values` value, so `simulation` is the least-wrong choice.
+  - id: SF_fluxes
+    path: fluxes.tsv
+    format: freeflux_csv
+    role: simulation
+    checksum: "sha256:a33d1d2d190bbfdcae7dc3bbbe26878c0c4674d024831fa4126bc2d34f7847dd"
+    file_size_bytes: 87
+
+conditions:
+  - # FABRICATED (whole block): FreeFlux TSVs carry no metadata whatsoever.
+    id: COND_unknown
+    organism_name: unknown
+    strain: unknown
+    specific_growth_rate: 0.0
+    growth_rate_unit: 1/h
+
+investigations:
+  - id: INV_simple_model
+    name: simple_model FreeFlux round-trip
+    contributors:
+      - id: CONTRIB_unknown
+        name: Unknown
+
+networks:
+  - id: NET_simple_model_ff
+    name: simple_model network (FreeFlux)
+    metabolites:
+      - id: A
+        n_tracked_atoms: 3
+      - id: B
+        n_tracked_atoms: 3
+      - id: C
+        n_tracked_atoms: 2
+      - id: D
+        n_tracked_atoms: 3
+      - id: E
+        n_tracked_atoms: 1
+      - id: F
+        n_tracked_atoms: 3
+    # NOTE vs the MTF encoding: FreeFlux declares NO external pools. The MTF
+    # .netw had E_ext and F_ext; here E_out/F_out simply have an empty product
+    # column. So the same model has 8 metabolites in MTF and 6 here. Nothing in
+    # the schema records that these two networks are the same network.
+    reactions:
+      - id: R1
+        reversibility: false
+        reactants:
+          - metabolite_id: A
+        products:
+          - metabolite_id: B
+        atom_transition_variants:
+          - variant_id: R1_v1
+            transitions:
+              - reactant_metabolite_id: A
+                reactant_atom_index: 0
+                product_metabolite_id: B
+                product_atom_index: 0
+                annotation_type: letter
+              - reactant_metabolite_id: A
+                reactant_atom_index: 1
+                product_metabolite_id: B
+                product_atom_index: 1
+                annotation_type: letter
+              - reactant_metabolite_id: A
+                reactant_atom_index: 2
+                product_metabolite_id: B
+                product_atom_index: 2
+                annotation_type: letter
+      - id: R2
+        reversibility: false
+        reactants:
+          - metabolite_id: B
+        products:
+          - metabolite_id: D
+        atom_transition_variants:
+          - variant_id: R2_v1
+            transitions:
+              - reactant_metabolite_id: B
+                reactant_atom_index: 0
+                product_metabolite_id: D
+                product_atom_index: 0
+                annotation_type: letter
+              - reactant_metabolite_id: B
+                reactant_atom_index: 1
+                product_metabolite_id: D
+                product_atom_index: 1
+                annotation_type: letter
+              - reactant_metabolite_id: B
+                reactant_atom_index: 2
+                product_metabolite_id: D
+                product_atom_index: 2
+                annotation_type: letter
+      - id: R3
+        reversibility: false
+        reactants:
+          - metabolite_id: D
+        products:
+          - metabolite_id: B
+        atom_transition_variants:
+          - variant_id: R3_v1
+            transitions:
+              - reactant_metabolite_id: D
+                reactant_atom_index: 0
+                product_metabolite_id: B
+                product_atom_index: 0
+                annotation_type: letter
+              - reactant_metabolite_id: D
+                reactant_atom_index: 1
+                product_metabolite_id: B
+                product_atom_index: 1
+                annotation_type: letter
+              - reactant_metabolite_id: D
+                reactant_atom_index: 2
+                product_metabolite_id: B
+                product_atom_index: 2
+                annotation_type: letter
+      # R4: B(abc) -> C(bc)+E(a).  Same mapping as the MTF file's
+      # "B (cab) -> C (ab) + E (c)" but with different letters. The schema
+      # normalises both to the same indices, which is a genuine win.
+      - id: R4
+        reversibility: false
+        reactants:
+          - metabolite_id: B
+        products:
+          - metabolite_id: C
+          - metabolite_id: E
+        atom_transition_variants:
+          - variant_id: R4_v1
+            transitions:
+              - reactant_metabolite_id: B
+                reactant_atom_index: 1
+                product_metabolite_id: C
+                product_atom_index: 0
+                annotation_type: letter
+              - reactant_metabolite_id: B
+                reactant_atom_index: 2
+                product_metabolite_id: C
+                product_atom_index: 1
+                annotation_type: letter
+              - reactant_metabolite_id: B
+                reactant_atom_index: 0
+                product_metabolite_id: E
+                product_atom_index: 0
+                annotation_type: letter
+      # R5: B(abc)+C(de) -> D(bcd)+E(a)+E(e).  E appears TWICE again, exactly as
+      # in the MTF encoding, and the two E transitions are again
+      # indistinguishable: both are (E, 0).
+      - id: R5
+        reversibility: false
+        reactants:
+          - metabolite_id: B
+          - metabolite_id: C
+        products:
+          - metabolite_id: D
+          - metabolite_id: E
+          - metabolite_id: E
+        atom_transition_variants:
+          - variant_id: R5_v1
+            transitions:
+              - reactant_metabolite_id: B
+                reactant_atom_index: 1
+                product_metabolite_id: D
+                product_atom_index: 0
+                annotation_type: letter
+              - reactant_metabolite_id: B
+                reactant_atom_index: 2
+                product_metabolite_id: D
+                product_atom_index: 1
+                annotation_type: letter
+              - reactant_metabolite_id: C
+                reactant_atom_index: 0
+                product_metabolite_id: D
+                product_atom_index: 2
+                annotation_type: letter
+              - reactant_metabolite_id: B
+                reactant_atom_index: 0
+                product_metabolite_id: E
+                product_atom_index: 0
+                annotation_type: letter
+              - reactant_metabolite_id: C
+                reactant_atom_index: 1
+                product_metabolite_id: E
+                product_atom_index: 0
+                annotation_type: letter
+      - id: R6
+        reversibility: false
+        reactants:
+          - metabolite_id: D
+        products:
+          - metabolite_id: F
+        atom_transition_variants:
+          - variant_id: R6_v1
+            transitions:
+              - reactant_metabolite_id: D
+                reactant_atom_index: 0
+                product_metabolite_id: F
+                product_atom_index: 0
+                annotation_type: letter
+              - reactant_metabolite_id: D
+                reactant_atom_index: 1
+                product_metabolite_id: F
+                product_atom_index: 1
+                annotation_type: letter
+              - reactant_metabolite_id: D
+                reactant_atom_index: 2
+                product_metabolite_id: F
+                product_atom_index: 2
+                annotation_type: letter
+      # E_out: "E_out | E | (empty) | 0" — reactant with NO atom map and NO
+      # product. LOST: as with linea.fml's v3, the atom's fate is inexpressible
+      # (AtomTransition requires both product fields), so no variant is emitted.
+      - id: E_out
+        reversibility: false
+        reaction_type: sink
+        reactants:
+          - metabolite_id: E
+      - id: F_out
+        reversibility: false
+        reaction_type: sink
+        reactants:
+          - metabolite_id: F
+
+experiments:
+  - id: EXP_simple_model_ff
+    name: simple_model FreeFlux experiment
+    investigation_id: INV_simple_model
+    stationary: true
+    condition: COND_unknown
+    # FABRICATED IN FULL: this directory has NO tracer file. FreeFlux sets the
+    # tracer through the Python API (`set_labeling_strategy`), so the labeling
+    # is simply absent from the file set — yet labeled_sources is required with
+    # minimum_cardinality: 1. The values below are copied from the MTF sibling
+    # to make the document valid; they are not in the FreeFlux data.
+    labeled_sources:
+      - id: SRC_A
+        metabolite_id: A
+        input_type: isotopomer
+        tracers:
+          - labeling_pattern: "010"
+            tracer_fraction: 1.0
+            isotopic_purity: 1.0
+    mid_measurements:
+      # measured_MDVs.tsv: "F_123 | <4 comma-joined means> | <4 comma-joined sds>"
+      # The fragment id F_123 must be split on the last underscore into
+      # metabolite F and positions 1,2,3.
+      # LOST: the fragment id itself (F_123) has no slot — see Phase 3t-7.
+      # FABRICATED: analytical_method; FreeFlux records none.
+      - id: MID_F_123
+        metabolite_id: F
+        atom_positions: "1,2,3"
+        analytical_method: other
+        analytical_method_other: not recorded by FreeFlux
+        data_points:
+          - {isotopologue_index: 0, value: 6.34920635e-05, standard_deviation: 8.34413657e-06}
+          - {isotopologue_index: 1, value: 0.800761905, standard_deviation: 0.0227359334}
+          - {isotopologue_index: 2, value: 0.198285714, standard_deviation: 0.0226919962}
+          - {isotopologue_index: 3, value: 0.000888888889, standard_deviation: 0.000118946889}
+    flux_measurements:
+      # measured_fluxes.tsv: "R1 | 100.0 | 0.1"
+      - id: FM_R1
+        reaction_id: R1
+        flux_type: net
+        value: 100.0
+        standard_deviation: 0.1
+
+simulation_runs:
+  - id: RUN_freeflux
+    investigation_id: INV_simple_model
+    network_model_id: NET_simple_model_ff
+    experiment_id:
+      - EXP_simple_model_ff
+    fluxomics_method: IST_MFA
+    software:
+      id: SW_freeflux
+      software_name: freeflux
+      # FABRICATED: no FreeFlux file records the package version.
+      version: unknown
+    input_format: freeflux_csv
+    # FABRICATED: FreeFlux's solver is a `solve()` argument (`slsqp` default),
+    # never a file field. And OptimizationMethodEnum does not exist, so this is
+    # unvalidated free text.
+    optimization_method: slsqp
+    # fluxes.tsv — the preset net fluxes fed to the simulation.
+    # LOST: nothing distinguishes "preset input fluxes" from "fitted results";
+    # both land in a FluxSolution. Here they are preset inputs.
+    initial_values:
+      id: INIT_freeflux
+      flux_results:
+        - {reaction_id: E_out, flux_type: net, value: 60.0}
+        - {reaction_id: F_out, flux_type: net, value: 80.0}
+        - {reaction_id: R1, flux_type: net, value: 100.0}
+        - {reaction_id: R2, flux_type: net, value: 110.0}
+        - {reaction_id: R3, flux_type: net, value: 50.0}
+        - {reaction_id: R4, flux_type: net, value: 20.0}
+        - {reaction_id: R5, flux_type: net, value: 20.0}
+        - {reaction_id: R6, flux_type: net, value: 80.0}
+    # No flux_solution and no goodness_of_fit: this FreeFlux file set contains
+    # no results at all. LOST: FreeFlux's `is_success` / `opt_objective` /
+    # `opt_resids` and its n_meas / n_params / dof have no slots (Phase 3t-6).

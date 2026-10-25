@@ -1,6 +1,7 @@
 """Tests for schema loading and validation."""
 
 from pathlib import Path
+from typing import ClassVar
 
 import yaml
 
@@ -109,3 +110,57 @@ class TestOntologyMapping:
         data = _load_yaml("experiment.yaml")
         le = data["classes"]["LabelingExperiment"]
         assert le.get("class_uri") == "fluxo:FLUXO_0000049"
+
+
+class TestOntologyScopedEnums:
+    """Pin the enums whose membership is defined by a FLUXO subtree.
+
+    These guard the failure mode that produced Phase 3t-0: values disappearing
+    from an enum while descriptions elsewhere still promise them, with nothing
+    failing. Membership here is not a matter of taste — it is whatever the
+    ontology places under the stated parent — so the expected sets are written
+    out in full and compared exactly.
+    """
+
+    # FLUXO:0000021 "fluxomics method" is_a IAO:0000104 plan specification.
+    EXPECTED_METHODS: ClassVar[dict[str, str]] = {
+        "I_MFA": "fluxo:FLUXO_0000041",
+        "C13_MFA": "fluxo:FLUXO_0000042",
+        "IST_MFA": "fluxo:FLUXO_0000043",
+        "INST_MFA": "fluxo:FLUXO_0000044",
+        "dynamic_MFA": "fluxo:FLUXO_0000045",
+        "kinetic_flux_profiling": "fluxo:FLUXO_0000295",
+        "stoichiometry_based": "fluxo:FLUXO_0000018",
+        "constraint_based": "fluxo:FLUXO_0000019",
+        "kinetic_modeling": "fluxo:FLUXO_0000294",
+    }
+
+    # FLUXO:0000162 "fluxomics investigation" is_a COB:0000035 executed process.
+    EXPECTED_INVESTIGATION_TYPES: ClassVar[dict[str, str]] = {
+        "MFA": "fluxo:FLUXO_0000040",
+        "FBA": "fluxo:FLUXO_0000039",
+    }
+
+    def _meanings(self, enum_name: str) -> dict:
+        enums = _load_yaml("enumerations.yaml")["enums"]
+        values = enums[enum_name]["permissible_values"]
+        return {k: (v or {}).get("meaning") for k, v in values.items()}
+
+    def test_fluxomics_method_enum_matches_ontology_subtree(self) -> None:
+        """FluxomicsMethodEnum is exactly the FLUXO:0000021 subtree."""
+        assert self._meanings("FluxomicsMethodEnum") == self.EXPECTED_METHODS
+
+    def test_investigation_type_enum_matches_ontology_subtree(self) -> None:
+        """InvestigationTypeEnum is exactly the FLUXO:0000162 subtree."""
+        assert self._meanings("InvestigationTypeEnum") == self.EXPECTED_INVESTIGATION_TYPES
+
+    def test_investigation_terms_are_not_methods(self) -> None:
+        """FBA/MFA are investigations, so they must not appear as methods.
+
+        FLUXO:0000039 and FLUXO:0000040 are is_a "fluxomics investigation", not
+        is_a "fluxomics method". Mapping either into the method enum — as
+        `FBA -> FLUXO_0000039` did until 2026-09-18 — is a category error.
+        """
+        method_meanings = set(self._meanings("FluxomicsMethodEnum").values())
+        assert "fluxo:FLUXO_0000039" not in method_meanings
+        assert "fluxo:FLUXO_0000040" not in method_meanings

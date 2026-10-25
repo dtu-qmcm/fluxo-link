@@ -1,0 +1,174 @@
+# WAY 1 of 2 for the FluxML corpus — "materialise the content".
+#
+# Source: fluxomics_data_converter/data/benchmark/FluxML/linea.fml (56 lines,
+# 13CFLUX2's FluxML format). One <reactionnetwork> + one <configuration>.
+#
+# Values marked FABRICATED appear nowhere in linea.fml but are forced by a
+# required slot. Comments marked LOST record source facts with no slot.
+id: FLUXO_DS_linea_fluxml
+name: Linea — FluxML academic straight-line model
+# LOST: <info> carries name/modeler/version/date/comment. Only <name> and
+# <modeler> have anywhere to go, and neither lands on the network:
+#   <version>1.0</version>              -> no MetabolicNetworkModel.version
+#   <date>2020-07-24 20:33:00</date>    -> FluxoDataset.creation_date is
+#                                          range: date, so the TIME is dropped
+#   <comment>Academic straight line network model</comment>
+#                                       -> MetabolicNetworkModel has no
+#                                          description slot; parked on the
+#                                          dataset description below instead
+description: Academic straight line network model
+schema_version: "0.1.0"
+dataset_type: benchmark
+creation_date: "2020-07-24"
+fluxo_ontology_version: "2026-03-03"
+
+source_files:
+  # LOST: one .fml is network + tracer + measurements + simulation +
+  # configuration simultaneously, but SourceFile.role is single-valued and
+  # required. Declaring the file once forces picking one role; see Way 2
+  # (linea_fluxml_catalog.yaml) for the five-duplicate-entries alternative.
+  - id: SF_linea
+    path: linea.fml
+    format: FluxML
+    role: configuration
+    checksum: "sha256:ebef2be79ee2041eca073facad7076fae04ccf0439e784d6724f921f82278217"
+    media_type: application/xml
+    file_size_bytes: 1920
+    description: >-
+      Composite FluxML document: reactionnetwork + one configuration
+      (tracer, measurement model, measurement data, simulation).
+
+conditions:
+  - # FABRICATED (whole block): linea.fml carries no organism, strain, or
+    # growth rate. <info> has <modeler> but no <strain>.
+    id: COND_unknown
+    organism_name: unknown
+    strain: unknown
+    specific_growth_rate: 0.0
+    growth_rate_unit: 1/h
+
+investigations:
+  - id: INV_linea
+    name: Linea straight-line model
+    contributors:
+      # From <info><modeler>Stratmann</modeler>.
+      - id: CONTRIB_stratmann
+        name: Stratmann
+
+networks:
+  - id: NET_linea
+    name: Linea
+    metabolites:
+      - id: S
+        n_tracked_atoms: 1
+      - id: A
+        n_tracked_atoms: 1
+      - id: B
+        n_tracked_atoms: 1
+    reactions:
+      # v1: <reduct S cfg="a"/> -> <rproduct A cfg="a"/>, bidirectional="false"
+      - id: v1
+        reversibility: false
+        reactants:
+          - metabolite_id: S
+        products:
+          - metabolite_id: A
+        atom_transition_variants:
+          - variant_id: v1_v1
+            transitions:
+              - reactant_metabolite_id: S
+                reactant_atom_index: 0
+                product_metabolite_id: A
+                product_atom_index: 0
+                annotation_type: letter
+      # v2: bidirectional="true" — a genuinely reversible reaction.
+      - id: v2
+        reversibility: true
+        reactants:
+          - metabolite_id: A
+        products:
+          - metabolite_id: B
+        atom_transition_variants:
+          - variant_id: v2_v1
+            transitions:
+              - reactant_metabolite_id: A
+                reactant_atom_index: 0
+                product_metabolite_id: B
+                product_atom_index: 0
+                annotation_type: letter
+      # v3: <reduct id="B" cfg="a"/> and NO <rproduct> at all — an efflux that
+      # consumes a tracked carbon.
+      #
+      # LOST: the atom transition cannot be expressed. AtomTransition requires
+      # BOTH product_metabolite_id AND product_atom_index, so there is no way to
+      # say "B's atom 1 leaves the system". The variant is omitted entirely,
+      # which silently drops the only atom-level fact about v3.
+      - id: v3
+        reversibility: false
+        reaction_type: sink
+        reactants:
+          - metabolite_id: B
+
+experiments:
+  # From <configuration name="default" stationary="false">.
+  # LOST: the configuration NAME. LabelingExperiment.name is optional free text
+  # with no identifier semantics, while <configuration>@name is XSD-unique and
+  # is the configuration's identity. linea.fml has only one configuration so
+  # nothing collides here — but EC.fml has four.
+  - id: EXP_linea_default
+    name: default
+    investigation_id: INV_linea
+    stationary: false
+    condition: COND_unknown
+    tracer_summary: 90% [1-13C] S, 10% unlabelled
+    labeled_sources:
+      # <input pool="S"> with two <label> children.
+      - id: SRC_S
+        metabolite_id: S
+        input_type: isotopomer
+        tracers:
+          - labeling_pattern: "0"
+            tracer_fraction: 0.1
+            # FABRICATED: <label> has no purity attribute in linea.fml.
+            isotopic_purity: 1.0
+          - labeling_pattern: "1"
+            tracer_fraction: 0.9
+            isotopic_purity: 1.0
+    mid_measurements:
+      # <group id="MS_A" times="1."><textual>A#M0,1</textual></group>
+      # FABRICATED atom_positions: the spec is "A#M0,1" with NO bracket, which
+      # means the whole molecule. atom_positions is required, so "1" is invented.
+      # FABRICATED analytical_method: FluxML groups carry no analytical info.
+      # LOST: the raw spec string "A#M0,1"; and times="1." (the declared grid)
+      # is indistinguishable from the per-datum time here because there is only
+      # one time point. With 9 grid points (as in EC.fml) it would not fit.
+      - id: MS_A
+        metabolite_id: A
+        atom_positions: "1"
+        analytical_method: other
+        analytical_method_other: not recorded in FluxML
+        time_point: 1.0
+        data_points:
+          - {isotopologue_index: 0, value: 0.1, standard_deviation: 0.001}
+          - {isotopologue_index: 1, value: 0.9, standard_deviation: 0.001}
+      - id: MS_B
+        metabolite_id: B
+        atom_positions: "1"
+        analytical_method: other
+        analytical_method_other: not recorded in FluxML
+        time_point: 1.0
+        data_points:
+          - {isotopologue_index: 0, value: 0.1, standard_deviation: 0.001}
+          - {isotopologue_index: 1, value: 0.9, standard_deviation: 0.001}
+
+# No simulation_runs block: linea.fml is a model + experiment definition with
+# NO results. <simulation method="cumomer"/> is empty — no <variables>, so not
+# even initial values. This is honest, but it means the two facts the
+# <simulation> element does carry have nowhere to live:
+#   LOST: method="cumomer" -> SimulationRun.isotopic_state_space, but adding a
+#         SimulationRun would force fabricating software version, fluxomics_method and
+#         optimization_method for a run that never happened.
+#   LOST: <simulation>@type (absent here, so defaults to "auto") has no slot at
+#         all, and IsotopicStateSpaceEnum has no "auto" value either.
+# LOST: stationary="false" implies INST-MFA, so the run would need
+#       stop_time / a time grid — neither of which linea.fml states.

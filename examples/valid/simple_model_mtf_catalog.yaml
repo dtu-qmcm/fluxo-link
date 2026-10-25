@@ -1,0 +1,260 @@
+# WAY 2 of 2 — "record the dataset, not its contents".
+#
+# Same source corpus as simple_model_mtf_roundtrip.yaml (Way 1), encoded the
+# Tier-1 / PATH_FORWARD Path-B way: the native MTF files are *referenced* with
+# checksums, and only the comparable results are structured. Network, tracer and
+# measurement content stay in the native files.
+#
+# This is what `dataset_type: catalog` is meant to express. Two things to note:
+#
+#   1. A pure catalog dataset IS expressible, as of the tier fix: no `networks`
+#      and no `experiments` block appears below, and nothing is fabricated to
+#      stand in for them. Previously `SimulationRun.network_model_id` was
+#      `required: true` with range MetabolicNetworkModel, which requires >=1
+#      metabolite and >=1 reaction, which in turn requires >=1 reactant — so
+#      every catalog document had to carry a stub network that was not data.
+#      The requirement now lives on FluxoDataset as a rule conditioned on
+#      `dataset_type: benchmark`, where materialised input content belongs.
+#
+#   2. Runnability is assessed by scripts/check_runnable.py, which tries to
+#      assemble an influx_si invocation from this file alone.
+id: FLUXO_DS_simple_model_mtf_catalog
+name: simple_model — influx_si MTF run record (catalog tier)
+description: >-
+  Provenance-and-results record for one influx_si 7.4.3 run over the
+  simple_model MTF file set. Input content is referenced, not re-described.
+schema_version: "0.1.0"
+dataset_type: catalog
+fluxo_ontology_version: "2026-03-03"
+
+# The full file-level record: every native file, typed and checksummed.
+source_files:
+  - id: SF_netw
+    path: simple_model.netw
+    format: MTF
+    role: network
+    checksum: "sha256:edd48e2b6dfefde4f10439c562078ea1a4837058270d4886968c72edbe568a23"
+    media_type: text/tab-separated-values
+    file_size_bytes: 370
+    description: 8 reactions, 8 pools, letter-based atom transitions
+  - id: SF_linp
+    path: simple_model.linp
+    format: MTF
+    role: tracer
+    checksum: "sha256:f5594c3a47a27f17a5a93072869bd56b009481be419d4d14dd49eeac15123eb1"
+    file_size_bytes: 47
+    description: A, isotopomer 010, fraction 1.0
+  # LOST: FileRoleEnum cannot distinguish .miso (MID data) from .mflux
+  # (measured fluxes) from .mmet (pool sizes) — all three are "measurements".
+  # influx_si requires the .miso specifically, so a runner must re-derive the
+  # distinction from the filename extension.
+  - id: SF_miso
+    path: simple_model.miso
+    format: MTF
+    role: measurements
+    checksum: "sha256:1a2865a42f8846e5c940233f0d8b3fba838bd5d3ca1b18e1c71e0bd125be4f45"
+    file_size_bytes: 250
+    description: MID data, 1 fragment F[1,2,3], M0-M3, stationary
+  - id: SF_mflux
+    path: simple_model.mflux
+    format: MTF
+    role: measurements
+    checksum: "sha256:70b8d265fd5d0be74fbd86902cb241a89dfd082a4bf888a6568f5451f93dc25a"
+    file_size_bytes: 40
+    description: measured net flux R1 = 100.0 +/- 0.1
+  - id: SF_cnstr
+    path: simple_model.cnstr
+    format: MTF
+    role: constraints
+    checksum: "sha256:ba2b003d4cb978e594a4cb5fda606436d155c32990e67d1cf476627f0340733a"
+    file_size_bytes: 323
+    description: 16 NET box bounds, 0.0 <= v <= 150.0
+  # LOST: .tvar is a variable-classification file (Name/Kind/Type/Value).
+  # FileRoleEnum has no value for it; "simulation" is the least-wrong choice.
+  - id: SF_tvar
+    path: simple_model.tvar
+    format: MTF
+    role: simulation
+    checksum: "sha256:2ff4fa1221fc4e359effcdde3b6f29bffa1086469256e6c2e17753bb8e89ffa9"
+    file_size_bytes: 236
+    description: free/dependent split + starting values
+  - id: SF_opt
+    path: simple_model.opt
+    format: MTF
+    role: configuration
+    checksum: "sha256:57e2dd6ddee0d2d02f8709ee147bfefdb5dafc1c25f5a7209cd6cad188d24fe9"
+    file_size_bytes: 62
+    description: 'commandArgs: --clownr 1.e-3 --zc 1.e-4'
+  - id: SF_tvar_sim
+    path: simple_model_res/simple_model.tvar.sim
+    format: MTF
+    role: results
+    checksum: "sha256:d673b8e89e705d8d1c2c9a665a516c84df7a16d334d65c3cc87d99b62582313e"
+    file_size_bytes: 498
+  - id: SF_miso_sim
+    path: simple_model_res/simple_model.miso.sim
+    format: MTF
+    role: results
+    checksum: "sha256:e531fe9cf4836c04bda1994f8903d5d6eb9f4d78fc1d5cb3c7c0c1115930c672"
+    file_size_bytes: 412
+  - id: SF_mflux_sim
+    path: simple_model_res/simple_model.mflux.sim
+    format: MTF
+    role: results
+    checksum: "sha256:f1e2b545bb0a1b1352ac05a703fb3a22d082edeee853b24c44848a88ecd075de"
+    file_size_bytes: 74
+  - id: SF_stat
+    path: simple_model_res/simple_model.stat
+    format: MTF
+    role: results
+    checksum: "sha256:2b94d2453b3d81340a0bb585209729b764d37c7ecc07902f1811a00ea84294cc"
+    file_size_bytes: 278
+
+investigations:
+  - id: INV_simple_model
+    name: simple_model MTF round-trip
+    description: >-
+      Synthetic eight-reaction network used to verify converter round-trips
+      across FluxML, MTF and FreeFlux.
+    contributors:
+      - id: CONTRIB_unknown
+        name: Unknown
+
+# No `networks` block: the network content stays in SF_netw. Nothing is
+# fabricated to stand in for it — SimulationRun.network_model_id is
+# `recommended`, not `required`, and the FluxoDataset tier rule demands
+# materialised networks only when dataset_type is `benchmark`.
+
+# No `experiments` block either: at the catalog tier the tracer and measurement
+# content stays in SF_linp / SF_miso / SF_mflux. Omitting it also avoids
+# fabricating the Condition (organism / strain / growth rate), none of which
+# MTF carries.
+
+simulation_runs:
+  - id: RUN_influx_si
+    investigation_id: INV_simple_model
+    fluxomics_method: IST_MFA
+    software:
+      id: SW_influx_si
+      software_name: influx_si
+      version: "7.4.3"
+    input_format: MTF
+    # FABRICATED: no MTF file records an optimizer, and the .log shows this run
+    # was invoked with --noopt (no optimisation at all), so the slot is not just
+    # absent from the source but inapplicable to this run.
+    optimization_method: nlsic
+    isotopic_state_space: cumomer
+    # LOST: the actual invocation. simple_model.log records
+    #   influx_s.py --noopt --clownr 1e-5 --prefix simple_model
+    # which DIFFERS from simple_model.opt (--clownr 1.e-3 --zc 1.e-4). There is
+    # no command_line, run_mode, or solver_options slot, so the dataset cannot
+    # say what was actually run — only that an .opt file exists.
+    # LOST: code-gen / calcul / end timestamps and wall-clock runtime.
+    input_files:
+      - id: SF_netw_in
+        path: simple_model.netw
+        format: MTF
+        role: network
+        checksum: "sha256:edd48e2b6dfefde4f10439c562078ea1a4837058270d4886968c72edbe568a23"
+      - id: SF_linp_in
+        path: simple_model.linp
+        format: MTF
+        role: tracer
+        checksum: "sha256:f5594c3a47a27f17a5a93072869bd56b009481be419d4d14dd49eeac15123eb1"
+      - id: SF_miso_in
+        path: simple_model.miso
+        format: MTF
+        role: measurements
+        checksum: "sha256:1a2865a42f8846e5c940233f0d8b3fba838bd5d3ca1b18e1c71e0bd125be4f45"
+      - id: SF_mflux_in
+        path: simple_model.mflux
+        format: MTF
+        role: measurements
+        checksum: "sha256:70b8d265fd5d0be74fbd86902cb241a89dfd082a4bf888a6568f5451f93dc25a"
+      - id: SF_cnstr_in
+        path: simple_model.cnstr
+        format: MTF
+        role: constraints
+        checksum: "sha256:ba2b003d4cb978e594a4cb5fda606436d155c32990e67d1cf476627f0340733a"
+      - id: SF_tvar_in
+        path: simple_model.tvar
+        format: MTF
+        role: simulation
+        checksum: "sha256:2ff4fa1221fc4e359effcdde3b6f29bffa1086469256e6c2e17753bb8e89ffa9"
+      - id: SF_opt_in
+        path: simple_model.opt
+        format: MTF
+        role: configuration
+        checksum: "sha256:57e2dd6ddee0d2d02f8709ee147bfefdb5dafc1c25f5a7209cd6cad188d24fe9"
+    output_files:
+      - id: SF_tvar_sim_out
+        path: simple_model_res/simple_model.tvar.sim
+        format: MTF
+        role: results
+      - id: SF_miso_sim_out
+        path: simple_model_res/simple_model.miso.sim
+        format: MTF
+        role: results
+      - id: SF_mflux_sim_out
+        path: simple_model_res/simple_model.mflux.sim
+        format: MTF
+        role: results
+      - id: SF_stat_out
+        path: simple_model_res/simple_model.stat
+        format: MTF
+        role: results
+    # The comparable results layer — the reason the catalog tier exists.
+    # Extracted from simple_model.tvar.sim.
+    #
+    # DANGLING REFERENCES: FluxResult.reaction_id has range NetworkReaction, but
+    # at this tier no real network is materialised, so R1..F_out resolve to
+    # nothing in this document. linkml-validate accepts it (JSON-Schema
+    # validation does not check referential integrity), so this works TODAY --
+    # but it is exactly what the planned Phase 5 referential-integrity rule
+    # (VALIDATION_REQUIREMENTS §3, §5) is specified to reject. The catalog tier
+    # is therefore on a collision course with its own validation plan.
+    #
+    # LOST per row: Type (F/C/D) and Struct_identif, as in Way 1.
+    # The 8 XCH rows are omitted here: all have value 0 and SD 0, and
+    # FluxTypeEnum.exchange is documented as min(fwd,rev) while influx_si's XCH
+    # is the normalised xch01 -- a different quantity (§13.11).
+    flux_solution:
+      id: SOL_influx_si
+      flux_results:
+        - reaction_id: R1
+          flux_type: net
+          value: 100.0
+          standard_deviation: 0.0999999999999999
+        - reaction_id: R2
+          flux_type: net
+          value: 110.0
+          standard_deviation: 12.6867790062193
+        - reaction_id: R3
+          flux_type: net
+          value: 50.0
+          standard_deviation: 10.2318802202028
+        - reaction_id: R4
+          flux_type: net
+          value: 20.0
+          standard_deviation: 1.30753659221237
+        - reaction_id: R5
+          flux_type: net
+          value: 20.0
+          standard_deviation: 1.30753659221237
+        - reaction_id: R6
+          flux_type: net
+          value: 80.0
+          standard_deviation: 1.30982897355889
+        - reaction_id: E_out
+          flux_type: net
+          value: 60.0
+          standard_deviation: 3.92260977663711
+        - reaction_id: F_out
+          flux_type: net
+          value: 80.0
+          standard_deviation: 1.30982897355889
+    goodness_of_fit:
+      wssr: 2.17872364785429e-16
+      degrees_of_freedom: 1
+      chi_square_p_value: 1.17771751823129e-08
+      reduced_chi_square: 2.17872364785429e-16

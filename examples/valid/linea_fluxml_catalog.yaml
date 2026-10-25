@@ -1,0 +1,132 @@
+# WAY 2 of 2 for the FluxML corpus — "record the dataset, not its contents".
+#
+# Same source as linea_fluxml_materialised.yaml (Way 1): one 56-line FluxML
+# document. Here the file is referenced with a checksum and nothing is
+# re-described. Runnability is assessed by scripts/check_runnable.py.
+#
+# THE HEADLINE PROBLEM AT THIS TIER FOR FluxML: a single .fml is network +
+# tracer + measurements + simulation + configuration all at once, but
+# SourceFile.role is single-valued and required. There are only two options and
+# both are wrong:
+#   (a) one SourceFile with one role  -> four of the five roles are unrecorded;
+#   (b) five SourceFiles, same path and same checksum, one per role -> the file
+#       is declared five times and a consumer cannot tell whether that means
+#       five files or one. Option (b) is used below, because a runner needs to
+#       know the tracer and measurement content is present at all.
+id: FLUXO_DS_linea_fluxml_catalog
+name: Linea — FluxML model record (catalog tier)
+description: >-
+  Provenance record for the linea.fml FluxML document. Input content is
+  referenced, not re-described.
+schema_version: "0.1.0"
+dataset_type: catalog
+creation_date: "2020-07-24"
+fluxo_ontology_version: "2026-03-03"
+
+source_files:
+  # The same 1920-byte file, five times, once per role it plays.
+  - id: SF_linea_network
+    path: linea.fml
+    format: FluxML
+    role: network
+    checksum: "sha256:ebef2be79ee2041eca073facad7076fae04ccf0439e784d6724f921f82278217"
+    media_type: application/xml
+    file_size_bytes: 1920
+    description: "<reactionnetwork>: 3 pools, 3 reactions, letter cfg notation"
+  - id: SF_linea_tracer
+    path: linea.fml
+    format: FluxML
+    role: tracer
+    checksum: "sha256:ebef2be79ee2041eca073facad7076fae04ccf0439e784d6724f921f82278217"
+    media_type: application/xml
+    file_size_bytes: 1920
+    description: "<configuration><input pool=\"S\">: 0.1 unlabelled / 0.9 [1-13C]"
+  - id: SF_linea_measurements
+    path: linea.fml
+    format: FluxML
+    role: measurements
+    checksum: "sha256:ebef2be79ee2041eca073facad7076fae04ccf0439e784d6724f921f82278217"
+    media_type: application/xml
+    file_size_bytes: 1920
+    description: "<measurement>: groups MS_A, MS_B; 4 datums at t=1.0"
+  - id: SF_linea_simulation
+    path: linea.fml
+    format: FluxML
+    role: simulation
+    checksum: "sha256:ebef2be79ee2041eca073facad7076fae04ccf0439e784d6724f921f82278217"
+    media_type: application/xml
+    file_size_bytes: 1920
+    description: "<simulation method=\"cumomer\">, no <variables>"
+  - id: SF_linea_configuration
+    path: linea.fml
+    format: FluxML
+    role: configuration
+    checksum: "sha256:ebef2be79ee2041eca073facad7076fae04ccf0439e784d6724f921f82278217"
+    media_type: application/xml
+    file_size_bytes: 1920
+    description: 'configuration name="default" stationary="false"'
+
+investigations:
+  - id: INV_linea
+    name: Linea straight-line model
+    description: Academic straight line network model
+    contributors:
+      - id: CONTRIB_stratmann
+        name: Stratmann
+
+# No `networks` block: the real network is inside SF_linea_network and stays
+# there. network_model_id is `recommended`, and the FluxoDataset tier rule
+# requires materialised networks only at `dataset_type: benchmark`.
+
+# No `experiments` block: tracer and measurement content stays in the .fml.
+# This also avoids fabricating the Condition, which FluxML cannot supply.
+# LOST: <configuration name="default" stationary="false">. Without an
+# experiment there is nowhere to record that this configuration is
+# isotopically NON-stationary — and that single bit decides whether the tool
+# is invoked for INST-MFA or stationary MFA. See check_runnable.py finding R4.
+
+simulation_runs:
+  - id: RUN_linea_planned
+    investigation_id: INV_linea
+    # From stationary="false".
+    fluxomics_method: INST_MFA
+    software:
+      # FluxML is 13CFLUX2's native format.
+      id: SW_13cflux2
+      software_name: 13CFLUX2
+      # FABRICATED: <info><version>1.0</version> is the MODEL version, not the
+      # software version. No FluxML element records the tool version, and
+      # SoftwareInfo.version is required.
+      version: unknown
+    input_format: FluxML
+    # FABRICATED: FluxML has no optimizer field anywhere. 13CFLUX2's default is
+    # a Levenberg-Marquardt-family least-squares fit.
+    optimization_method: least_squares
+    # From <simulation method="cumomer">.
+    isotopic_state_space: cumomer
+    # LOST: <simulation>@type — no slot, and IsotopicStateSpaceEnum has no
+    # "auto" value (the FluxML default) either.
+    # LOST: stationary="false" means INST-MFA, which needs a stop time and a
+    # time grid. The .fml states neither (only <group times="1."> and the
+    # per-datum time="1."), so stop_time is unset and there is no
+    # integration_timespan slot to hold the grid.
+    # DELIBERATE CONTRAST with source_files above. source_files declares the
+    # file five times (option b); input_files declares it once (option a), so
+    # the two defects can be compared side by side:
+    #   option (a), here: the run's inputs do not assert that a network is
+    #     present at all, so a consumer cannot confirm the mandatory input.
+    #   option (b), above: the network IS asserted, but the same 1920-byte file
+    #     appears five times with one checksum, and nothing says those five
+    #     entries are one file.
+    # Neither option lets a consumer state "this one file supplies all five
+    # roles", which is the actual fact.
+    input_files:
+      - id: SF_linea_in
+        path: linea.fml
+        format: FluxML
+        role: configuration
+        checksum: "sha256:ebef2be79ee2041eca073facad7076fae04ccf0439e784d6724f921f82278217"
+    # No output_files, no flux_solution, no goodness_of_fit: linea.fml is a
+    # runnable input with no results. Note the schema accepts this happily, so a
+    # "run" that never ran is indistinguishable from one whose results were
+    # simply not extracted — there is no run status or run_mode slot.
