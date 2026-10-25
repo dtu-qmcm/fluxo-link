@@ -39,6 +39,13 @@ classes:
       publication_doi:
         description: DOI of the associated publication.
         range: uriorcurie
+      investigation_type:
+        description: >-
+          Kind of fluxomics investigation this is (FLUXO:0000162
+          subtree). Distinct from SimulationRun.fluxomics_method: the
+          investigation is the executed process, the method is the plan
+          each run realises, and one investigation may realise several.
+        range: InvestigationTypeEnum
       contributors:
         description: List of contributors to this investigation.
         range: Contributor
@@ -68,37 +75,3 @@ classes:
       organization:
         description: Affiliated organization.
         slot_uri: fluxo:FLUXO_0000258
-
-  Condition:
-    class_uri: fluxo:FLUXO_0000218
-    description: >-
-      Cultivation conditions for the biological system under study,
-      including organism, strain, culture medium, and growth rate.
-    attributes:
-      id:
-        description: Unique identifier for the condition record.
-        identifier: true
-        required: true
-      name:
-        description: Human-readable name for this condition.
-      organism_name:
-        description: Name of the organism (e.g., Escherichia coli).
-        slot_uri: fluxo:FLUXO_0000181
-        required: true
-      strain:
-        description: Strain designation (e.g., BW25113).
-        slot_uri: fluxo:FLUXO_0000182
-        required: true
-      culture_medium:
-        description: Growth medium used for cultivation.
-        slot_uri: fluxo:FLUXO_0000184
-      specific_growth_rate:
-        description: >-
-          Measured specific growth rate of the organism.
-        slot_uri: fluxo:FLUXO_0000084
-        range: float
-        required: true
-      growth_rate_unit:
-        description: Unit for the growth rate (e.g., 1/h).
-        slot_uri: fluxo:FLUXO_0000219
-        required: true

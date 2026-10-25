@@ -78,6 +78,132 @@ Project change log. Updated by the AI agent as changes are made.
 
 ---
 
+## Ontology-Grounded Method Enums, `Condition` Hoist, Tier-Rule Fix (2026-09-18)
+
+`fixed` `changed` `schema` `ontology` `validation` — Phase 3t-0 closed; 3t-1 advanced
+
+### 3t-0 was not a regression
+
+PATH_FORWARD §13.12 and IMPLEMENTATION_PLAN §3t-0 both claimed Phase 3q/3r
+content had been "silently lost from the working tree" and told the next reader
+to restore it. **Wrong, and now withdrawn.** The audit was written 2026-08-19
+against `HEAD` = `17487dc`; commit `160086d` (2026-08-24) removed that content
+**deliberately**, and the working tree has matched `HEAD` ever since
+(`git diff HEAD` on both files is empty). The instruction would have re-added
+material the owner had just decided to drop.
+
+Decisions now recorded rather than flagged as defects:
+
+- `AerationEnum`, `CultivationModeEnum`, `Condition.aeration`/`.temperature`/
+  `.ph`/`.cultivation_mode`/`.genotype` — cultivation-process detail, out of
+  scope for fluxomics.
+- `AnalyticalMethodEnum` NMR sub-types — the NMR attribute set is unsettled.
+  Generic `NMR` and the NMR classes stay.
+- `MFASoftwareEnum`: `COBRApy`, `cameo` — not MFA software.
+
+### Enums re-grounded on the ontology
+
+The removals exposed that the method enum had **no membership rule**, so values
+drifted in and out by feel. Both enums are now defined as exactly one FLUXO
+subtree, verified against `Fluxomics_ontology/mfao/fluxo.obo`:
+
+- **`MFAMethodEnum` → `FluxomicsMethodEnum`** — exactly the `FLUXO:0000021`
+  ("fluxomics method") subtree, 9 values: `I_MFA` (0000041), `C13_MFA`
+  (0000042), `IST_MFA` (0000043), `INST_MFA` (0000044), `dynamic_MFA` (0000045),
+  `kinetic_flux_profiling` (0000295), `stoichiometry_based` (0000018),
+  `constraint_based` (0000019), `kinetic_modeling` (0000294).
+- **`InvestigationTypeEnum` (NEW)** — exactly the `FLUXO:0000162` subtree:
+  `MFA` (0000040), `FBA` (0000039). Surfaced as
+  `Investigation.investigation_type`.
+
+Two corrections fell out of this:
+
+- **`C13_MFA` restored.** FLUXO:0000042 *is* a subclass of FLUXO:0000041, so its
+  removal in `160086d` was collateral, not intended.
+- **`FBA → FLUXO_0000039` was a category error, removed.** FLUXO:0000039 and
+  FLUXO:0000040 are `is_a` FLUXO:0000162 *fluxomics investigation*, not methods.
+  A method is a plan specification (`FLUXO:0000021` `is_a` IAO:0000104); an
+  investigation is a completely executed planned process (`FLUXO:0000162` `is_a`
+  COB:0000035). One investigation may realise several methods — the cross-tool
+  benchmark case — so the method stays per-run on `SimulationRun` and the
+  investigation type sits on `Investigation`.
+
+**`SimulationRun.mfa_method` → `fluxomics_method`** accordingly: the enum now
+covers stoichiometry-based, constraint-based and kinetic-modeling methods, for
+which "MFA" is wrong. Renamed across schema, all fixtures, `scripts/` and the
+three planning documents.
+
+### Benchmark tier no longer requires `experiments`
+
+`benchmark_tier_requires_input_ground_truth` required both `networks` and
+`experiments` when `dataset_type == benchmark`. A stoichiometry-based run has no
+tracer, so an FBA benchmark could only validate by fabricating a
+`LabelingExperiment` plus a `TracerIsotopomer` with invented `tracer_fraction`
+and `isotopic_purity` — the same defect as the placeholder networks removed on
+2026-08-24. `networks` stays required; `experiments` is dropped from the
+postconditions.
+
+The real rule — *isotope-based method implies a labeling experiment* — **cannot
+be written in LinkML**: `fluxomics_method` lives on `SimulationRun`, nested, and
+`slot_conditions` cannot nest. It joins field-level tier strictness in the Phase
+7 `fluxo validate --benchmark` gate. Moving the method onto `Investigation`
+would not have helped: `Investigation` is nested under `FluxoDataset` exactly as
+`SimulationRun` is, so the wall is nesting depth, not slot placement.
+
+### `Condition` hoisted to dataset level, moved to `experiment.yaml`
+
+`LabelingExperiment.condition` and `SimulationRun.condition` each **inlined**
+their own copy, so one cultivation could be described twice with no shared
+identity and no way to detect divergence — the same shape as the
+`input_files`/`output_files` duplication logged in 3t-2.
+
+- New `FluxoDataset.conditions` (multivalued, inlined) holds each condition once.
+- Both slots are now **references by id**, not inlined objects.
+- `Condition` moved `investigation.yaml` → `experiment.yaml`. `Investigation`
+  never referenced it; both real consumers are `LabelingExperiment` and
+  `SimulationRun`, and `simulation_run.yaml` already imports `experiment.yaml`,
+  so no import changes were needed. `FLUXO:0000218` is `is_a` IAO:0000030
+  information content entity, so the ontology does not pin it to either module.
+
+### Also fixed
+
+- `NMRIsotopomerMeasurement.analytical_method`'s description named the three
+  deleted NMR sub-types; it now points at generic `NMR` and says why.
+- `fluxolink.yaml`'s `dataset_type` description no longer promises an
+  `experiments` requirement it does not impose.
+
+### Tests & fixtures
+
+- **`TestOntologyScopedEnums`** (`tests/test_schema.py`) — pins both enums to
+  their exact value→term mapping and asserts FLUXO:0000039/0000040 never
+  reappear as methods. This is the enum-completeness guard 3t-0 asked for,
+  scoped to enums whose membership is an ontology fact.
+- **`examples/valid/fba_benchmark_no_experiment.yaml` (NEW)** — a benchmark-tier
+  dataset with a materialised network, a `constraint_based` run, and
+  deliberately no experiments, tracer or atom transitions. Unrepresentable
+  before this change.
+- `test_stoichiometric_benchmark_needs_no_labeling_experiment`,
+  `test_conditions_are_referenced_not_inlined` added;
+  `test_benchmark_tier_requires_input_ground_truth` renamed to
+  `..._requires_materialised_network` and its `experiments` assertion dropped.
+
+### Verified
+
+32 tests pass (was 26); `ruff check src tests` and `ruff format --check` clean;
+all **11** valid fixtures validate; Pydantic datamodel regenerated.
+`check_runnable.py` reports 63 unresolvable items against 62 for the same
+fixture set before this change — the single new item is the new FBA fixture's
+`unknown tool 'other'`, so runnability did not regress. (Note: the 2026-08-24
+entry's figure of 27 does not reproduce against the current fixture set; the
+62-item baseline was measured immediately before this change.)
+
+### Still open
+
+`VALIDATION_REQUIREMENTS.md` §3 references a `fluxomics_method` value `13C`.
+The correct value is `C13_MFA`. Folded into the 3t-13 rewrite.
+
+---
+
 _This changelog is maintained by the AI agent. Entries are appended as changes are made._
 
 ---
@@ -340,6 +466,65 @@ The project was renamed from **fluxo-schema** to **FluxoLink** — "fluxomics da
 
 - LinkML template directory structure (`src/<pkg>/schema/`, `src/<pkg>/datamodel/`).
 - **FLUXO ontology grounding:** the `fluxo:` prefix (`http://purl.obolibrary.org/obo/`), all `class_uri`/`slot_uri`/`meaning` mappings, `fluxo_ontology_version`, and the `FluxoDataset` class name.
+
+---
+
+## Dataset Tiering: `catalog` Made Expressible (2026-08-24)
+
+`fixed` `schema` `validation` — Phase 3t-1 (partial)
+
+`dataset_type: catalog` was decorative. `SimulationRun.network_model_id` was
+`required: true` with range `MetabolicNetworkModel`, which requires >=1
+metabolite and >=1 reaction with >=1 reactant — so a dataset that referenced its
+native files instead of re-describing them could not carry a `SimulationRun` at
+all, which is the only reason the tier exists. All four catalog fixtures held a
+fabricated placeholder network purely to satisfy that slot.
+
+### What changed
+
+- `SimulationRun.network_model_id`: `required: true` -> `recommended: true`.
+- `FluxoDataset` gains a `rules:` block,
+  `benchmark_tier_requires_input_ground_truth`: when
+  `dataset_type == benchmark`, `networks` and `experiments` are required. The
+  requirement moved from an unconditional slot to the tier where materialised
+  input content actually belongs.
+- Placeholder networks **deleted** from `simple_model_mtf_catalog.yaml`,
+  `linea_fluxml_catalog.yaml`, `simple_model_freeflux_catalog.yaml` and
+  `ec_inca_catalog.yaml`, along with their now-dangling `network_model_id`
+  references. Fixture comments updated — they documented the blocker.
+- New negative fixture `examples/invalid/benchmark_tier_missing_inputs.yaml`
+  plus two tests in `tests/test_examples.py`: one that a benchmark-tier
+  document without input content is rejected, one that a catalog-tier document
+  with no `networks` and no `experiments` validates.
+- Pydantic datamodel regenerated.
+
+Verified: 26 tests pass; all 10 valid fixtures validate; `check_runnable.py`
+still reports exactly 27 unresolvable items (runnability is a separate defect
+class and did not regress).
+
+### Enabling fact, verified
+
+LinkML `rules` are enforced, not decorative: they compile to JSON Schema
+`if`/`then` and `linkml-validate` rejects violations. The gated-strictness
+strategy in Phase 3t-1 depends on this.
+
+### Correction to Phase 3t-1's design
+
+`slot_conditions` **cannot nest** — `gen-json-schema` fails with
+`SlotDefinition.__init__() got an unexpected keyword argument
+'slot_conditions'`. So a rule on `FluxoDataset` can require the *presence of
+blocks* but cannot re-impose `Condition.specific_growth_rate` or
+`TracerIsotopomer.isotopic_purity`, and a rule on those classes cannot see
+`dataset_type`. Field-level tier strictness must be an external validator (the
+Phase 7 `fluxo validate --benchmark` gate), not a LinkML rule.
+
+### Deliberately not done
+
+The `required` -> `recommended` demotions in the 3t-1 table. Each is a
+minimum-information judgement rather than housekeeping —
+`Condition.specific_growth_rate` is required today and supplied by **zero** of
+the four tool formats, so demoting it asserts what a fluxomics record may
+legitimately omit. That belongs with the MI work.
 
 ---
 

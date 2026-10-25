@@ -38,9 +38,14 @@ classes:
         required: true
       network_model_id:
         description: >-
-          Reference to the metabolic network model used.
+          Reference to the metabolic network model used. Recommended
+          rather than required: a catalog-tier dataset references its
+          network as a SourceFile instead of materialising it, and a
+          hard requirement here would force such datasets to fabricate
+          a stub MetabolicNetworkModel. Benchmark-tier datasets must
+          carry a network — enforced by the FluxoDataset tier rule.
         range: MetabolicNetworkModel
-        required: true
+        recommended: true
       experiment_id:
         description: >-
           Reference(s) to the labeling experiment(s) used. Singular for
@@ -49,17 +54,22 @@ classes:
           solution. Optional for non-isotope methods (e.g., FBA).
         range: LabelingExperiment
         multivalued: true
-      mfa_method:
-        description: The MFA method used in this simulation run.
-        range: MFAMethodEnum
+      fluxomics_method:
+        description: >-
+          The fluxomics method this run realises — a value from the
+          FLUXO:0000021 subtree. Renamed from mfa_method because the
+          enum now also covers stoichiometry-based, constraint-based
+          and kinetic-modeling methods, for which "MFA" is wrong.
+        range: FluxomicsMethodEnum
         required: true
       condition:
         description: >-
-          Biological context for this run. Useful for FBA (which has no
-          experiment); optional for isotope-based MFA where the condition
-          is carried on the experiment.
+          Reference to the cultivation condition in
+          FluxoDataset.conditions. Useful for stoichiometry-based runs
+          (which have no labeling experiment); optional for
+          isotope-based MFA, where the condition is reached through the
+          experiment.
         range: Condition
-        inlined: true
       software:
         description: Software tool and version used for this run.
         range: SoftwareInfo

@@ -60,9 +60,11 @@ classes:
       dataset_type:
         description: >-
           Classification of this dataset by curation tier. When
-          "benchmark", Tier-2 input content (networks, experiments,
-          measurements) is required; when "catalog" or absent, it is
-          optional.
+          "benchmark", the materialised network is required; when
+          "catalog" or absent, input content stays in the referenced
+          SourceFiles. Whether a benchmark also requires labeling
+          experiments depends on the method each run realises, which is
+          nested beyond the reach of a LinkML rule — see the rule below.
         range: DatasetTypeEnum
       source_files:
         description: >-
@@ -71,8 +73,17 @@ classes:
         range: SourceFile
         multivalued: true
         inlined_as_list: true
+      conditions:
+        description: >-
+          All cultivation conditions in this dataset, defined once and
+          referenced by LabelingExperiment.condition and
+          SimulationRun.condition. Held at dataset level so one
+          cultivation is described exactly once.
+        range: Condition
+        multivalued: true
+        inlined_as_list: true
       investigations:
-        description: All investigations in this dataset.
+        description: All MFA investigations in this dataset.
         range: Investigation
         multivalued: true
         inlined_as_list: true
@@ -91,3 +102,31 @@ classes:
         range: SimulationRun
         multivalued: true
         inlined_as_list: true
+    rules:
+      - title: benchmark_tier_requires_input_ground_truth
+        description: >-
+          A benchmark-tier dataset carries Tier-2 input ground truth, so
+          the network it is benchmarked against must be materialised in
+          the document rather than only referenced as native files.
+          Catalog-tier datasets (and datasets that leave dataset_type
+          absent) are exempt: they record results plus file-level
+          provenance, and their input content stays in the referenced
+          SourceFiles.
+
+          `experiments` is deliberately NOT required here. A
+          stoichiometry-based run (constraint_based, FBA) has no tracer,
+          so requiring a LabelingExperiment would force it to fabricate
+          one — the same defect that placeholder networks caused before
+          2026-08-24. The real rule is "isotope-based method implies a
+          labeling experiment", and it cannot be written in LinkML:
+          fluxomics_method lives on SimulationRun, nested, and
+          slot_conditions cannot nest. It is enforced by the Phase 7
+          `fluxo validate --benchmark` gate instead.
+        preconditions:
+          slot_conditions:
+            dataset_type:
+              equals_string: benchmark
+        postconditions:
+          slot_conditions:
+            networks:
+              required: true

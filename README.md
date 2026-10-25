@@ -20,7 +20,7 @@ The LinkML schema serves as the interface layer between the ontology (what conce
 |---|---|
 | `fluxolink.yaml` | Main schema with imports; defines the `FluxoDataset` root container (`tree_root`) |
 | `enumerations.yaml` | Semantic enums backed by FLUXO ontology terms |
-| `investigation.yaml` | Investigation provenance (contributors, cultivation `Condition`, publication) |
+| `investigation.yaml` | Investigation provenance (contributors, investigation type, publication) |
 | `network.yaml` | Metabolic network model (metabolites, reactions, atom transitions, flux/pool-size constraints) |
 | `experiment.yaml` | Labeling experiments (tracers, MID / NMR / flux / pool-size measurements) |
 | `simulation_run.yaml` | Simulation runs (software, flux solutions, goodness-of-fit) |

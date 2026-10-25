@@ -26,9 +26,9 @@ src/fluxolink/
 ├── schema/                  # LinkML YAML schema definitions
 │   ├── fluxolink.yaml    # Main schema (imports the rest) + FluxoDataset root container
 │   ├── enumerations.yaml    # Semantic enums backed by FLUXO ontology terms
-│   ├── investigation.yaml   # Investigation provenance (contributors, conditions, publication)
+│   ├── investigation.yaml   # Investigation provenance (contributors, investigation type, publication)
 │   ├── network.yaml         # Metabolic network model (metabolites, reactions, atom transitions)
-│   ├── experiment.yaml      # Labeling experiments (tracers, MID/NMR/flux/pool-size measurements)
+│   ├── experiment.yaml      # Labeling experiments (tracers, measurements) + cultivation Condition
 │   └── simulation_run.yaml  # Simulation runs (software, flux solutions, goodness-of-fit)
 └── datamodel/               # Auto-generated Python datamodel from LinkML
 tests/                       # Pytest test suite
@@ -42,9 +42,9 @@ project/                     # Project configuration (gen-project outputs)
 |---|---|
 | `fluxolink.yaml` | Main schema with imports + `FluxoDataset` root container |
 | `enumerations.yaml` | Semantic enums backed by FLUXO ontology terms |
-| `investigation.yaml` | Investigation provenance (contributors, conditions, publication) |
+| `investigation.yaml` | Investigation provenance (contributors, investigation type, publication) |
 | `network.yaml` | Metabolic network model (metabolites, reactions, atom transitions, constraints) |
-| `experiment.yaml` | Labeling experiments (tracers, MID/NMR/flux/pool-size measurements) |
+| `experiment.yaml` | Labeling experiments (tracers, MID/NMR/flux/pool-size measurements), cultivation `Condition` |
 | `simulation_run.yaml` | Simulation runs (software, flux solutions, goodness-of-fit) |
 
 ## Development Commands

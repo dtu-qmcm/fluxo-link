@@ -49,12 +49,23 @@ enums:
           Other software not listed; specify via the companion
           software_name_other free-text slot.
 
-  MFAMethodEnum:
+  FluxomicsMethodEnum:
     description: >-
-      Metabolic flux analysis method types from the FLUXO ontology.
-      Covers both isotope-based methods (IST/INST/dynamic/13C) and
-      stoichiometry-based methods (FBA, constraint-based).
+      Fluxomics method types — every value is a descendant of
+      FLUXO:0000021 ("fluxomics method"), which is_a IAO:0000104 plan
+      specification. A method is the plan a SimulationRun realises.
+      Investigation types (FLUXO:0000039 flux balance analysis,
+      FLUXO:0000040 metabolic flux analysis) are is_a "fluxomics
+      investigation", not methods — see InvestigationTypeEnum.
     permissible_values:
+      I_MFA:
+        description: >-
+          Isotope-based metabolic flux analysis — the parent method,
+          used when the labeling regime is left unspecified.
+        meaning: fluxo:FLUXO_0000041
+      C13_MFA:
+        description: 13C metabolic flux analysis
+        meaning: fluxo:FLUXO_0000042
       IST_MFA:
         description: Isotopically stationary MFA
         meaning: fluxo:FLUXO_0000043
@@ -64,13 +75,35 @@ enums:
       dynamic_MFA:
         description: Dynamic isotope-based MFA
         meaning: fluxo:FLUXO_0000045
-      I_MFA:
+      kinetic_flux_profiling:
+        description: Kinetic flux profiling
+        meaning: fluxo:FLUXO_0000295
+      stoichiometry_based:
         description: >-
-          Isotope-based metabolic flux analysis (parent of 13C-MFA,
-          IST-MFA, INST-MFA)
-        meaning: fluxo:FLUXO_0000041
+          Stoichiometry-based fluxomics method — no isotope labeling,
+          so no tracer, atom transitions or MID measurements.
+        meaning: fluxo:FLUXO_0000018
+      constraint_based:
+        description: >-
+          Constraint-based fluxomics method — the method realised by a
+          flux balance analysis investigation.
+        meaning: fluxo:FLUXO_0000019
+      kinetic_modeling:
+        description: Kinetic modeling fluxomics method
+        meaning: fluxo:FLUXO_0000294
+
+  InvestigationTypeEnum:
+    description: >-
+      Fluxomics investigation types — the FLUXO:0000162 ("fluxomics
+      investigation") subtree. An investigation is a completely executed
+      planned process; the method it realises is recorded per run in
+      FluxomicsMethodEnum.
+    permissible_values:
+      MFA:
+        description: Metabolic flux analysis
+        meaning: fluxo:FLUXO_0000040
       FBA:
-        description: Flux balance analysis (stoichiometry-based, no isotope)
+        description: Flux balance analysis
         meaning: fluxo:FLUXO_0000039
 
   InputFormatEnum:

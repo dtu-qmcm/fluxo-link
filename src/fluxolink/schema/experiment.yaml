@@ -40,9 +40,9 @@ classes:
         required: true
       condition:
         description: >-
-          Biological sample and cultivation context for this experiment.
+          Reference to the cultivation condition for this experiment,
+          defined once in FluxoDataset.conditions.
         range: Condition
-        inlined: true
         required: true
       stationary:
         description: >-
@@ -358,7 +358,12 @@ classes:
         range: NetworkMetabolite
         required: true
       analytical_method:
-        description: NMR method used (e.g., 1D 13C, 2D HSQC, 2D TOCSY).
+        description: >-
+          Analytical method used. Use the generic "NMR" value: the
+          1D-13C / 2D-HSQC / 2D-TOCSY sub-types were removed from
+          AnalyticalMethodEnum on 2026-08-24 pending a decision on the
+          NMR attribute set, so naming them here would promise values
+          the enum does not carry.
         range: AnalyticalMethodEnum
       analytical_method_other:
         description: >-
@@ -499,3 +504,40 @@ classes:
         minimum_value: 0
       description:
         description: Optional free-text description of the file contents.
+
+  Condition:
+    class_uri: fluxo:FLUXO_0000218
+    description: >-
+      Cultivation conditions for the biological system under study,
+      including organism, strain, culture medium, and growth rate.
+      Defined once per dataset in FluxoDataset.conditions and referenced
+      by LabelingExperiment.condition and SimulationRun.condition, so a
+      single cultivation is never described twice.
+    attributes:
+      id:
+        description: Unique identifier for the condition record.
+        identifier: true
+        required: true
+      name:
+        description: Human-readable name for this condition.
+      organism_name:
+        description: Name of the organism (e.g., Escherichia coli).
+        slot_uri: fluxo:FLUXO_0000181
+        required: true
+      strain:
+        description: Strain designation (e.g., BW25113).
+        slot_uri: fluxo:FLUXO_0000182
+        required: true
+      culture_medium:
+        description: Growth medium used for cultivation.
+        slot_uri: fluxo:FLUXO_0000184
+      specific_growth_rate:
+        description: >-
+          Measured specific growth rate of the organism.
+        slot_uri: fluxo:FLUXO_0000084
+        range: float
+        required: true
+      growth_rate_unit:
+        description: Unit for the growth rate (e.g., 1/h).
+        slot_uri: fluxo:FLUXO_0000219
+        required: true

@@ -6,7 +6,7 @@ readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.11"
 authors = [
-    { name = "fluxolink contributors" },
+    { name = "fluxolink" },
 ]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
@@ -81,6 +81,9 @@ convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["D"]
+# Emits SVG/mxGraph markup; breaking the literals at 99 columns hurts more
+# than it helps. Every other rule still applies.
+"scripts/gen_erd.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.11"
