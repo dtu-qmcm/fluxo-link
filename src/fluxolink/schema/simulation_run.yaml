@@ -2,8 +2,9 @@ id: https://w3id.org/fluxolink/simulation_run
 name: fluxolink-simulation-run
 title: FLUXO Simulation Run Module
 description: >-
-  Simulation run classes including software information, flux solutions,
-  and goodness-of-fit statistics.
+  Simulation run classes including software information, variable
+  specification, solver settings, run provenance, flux solutions,
+  measurement fits, and goodness-of-fit statistics.
 
 license: Apache-2.0
 
@@ -26,16 +27,23 @@ classes:
     class_uri: fluxo:FLUXO_0000057
     description: >-
       A single simulation run linking an investigation, network model,
-      and experiment to a specific software tool and its results.
+      and experiment(s) to a specific software tool, its settings and its
+      results. A run can also be planned but not executed (run_status
+      "planned"), which is how a FluxML configuration's <simulation>
+      block is recorded.
     attributes:
       id:
+        in_subset: [core]
         description: Unique identifier for the simulation run.
         identifier: true
         required: true
       investigation_id:
-        description: Reference to the parent investigation.
+        in_subset: [core]
+        description: >-
+          Reference to the parent investigation. Recommended; required at
+          the benchmark tier.
         range: Investigation
-        required: true
+        recommended: true
       network_model_id:
         description: >-
           Reference to the metabolic network model used. Recommended
@@ -47,6 +55,7 @@ classes:
         range: MetabolicNetworkModel
         recommended: true
       experiment_id:
+        in_subset: [core]
         description: >-
           Reference(s) to the labeling experiment(s) used. Singular for
           single-labeling-experiment MFA; multivalued (2+) for parallel
@@ -54,14 +63,37 @@ classes:
           solution. Optional for non-isotope methods (e.g., FBA).
         range: LabelingExperiment
         multivalued: true
+      configuration_name:
+        description: >-
+          Name of the configuration inside the input file that this run
+          executes (FluxML <configuration>@name). Lets a catalog-tier
+          record say which of several configurations was run without
+          materialising the experiment.
       fluxomics_method:
+        in_subset: [core]
         description: >-
           The fluxomics method this run realises — a value from the
-          FLUXO:0000021 subtree. Renamed from mfa_method because the
-          enum now also covers stoichiometry-based, constraint-based
-          and kinetic-modeling methods, for which "MFA" is wrong.
+          FLUXO:0000021 subtree. IST_MFA requires stationary experiments
+          and INST_MFA non-stationary ones (checked by
+          `fluxolink-validate`). Recommended; required at the benchmark
+          tier.
         range: FluxomicsMethodEnum
-        required: true
+        recommended: true
+      run_mode:
+        in_subset: [core]
+        description: >-
+          What the run did: estimation, forward simulation, confidence
+          intervals, Monte Carlo, ... Multivalued because one run can do
+          several (INCA estimate then continuate). An influx_si --noopt
+          run and every INCA benchmark script are forward simulations.
+        range: RunModeEnum
+        multivalued: true
+      run_status:
+        description: >-
+          Whether the run was executed. "planned" records a specified but
+          unexecuted run; "completed" with no flux_solution means the
+          results were not extracted.
+        range: RunStatusEnum
       condition:
         description: >-
           Reference to the cultivation condition in
@@ -71,6 +103,7 @@ classes:
           experiment.
         range: Condition
       software:
+        in_subset: [core]
         description: Software tool and version used for this run.
         range: SoftwareInfo
         required: true
@@ -82,11 +115,18 @@ classes:
       input_format_other:
         description: >-
           Free-text input format, used when input_format is "other".
+      command_line:
+        description: >-
+          The actual invocation, verbatim (e.g.
+          "influx_s.py --noopt --prefix simple_model"). influx_si's .log
+          records it, and it can differ from the .opt file.
       optimization_method:
         description: >-
-          Optimization method used (e.g., Levenberg-Marquardt, BFGS).
+          Optimization method used (e.g., nlsic, SLSQP,
+          Levenberg-Marquardt). Recommended; required at the benchmark
+          tier for estimation runs.
         slot_uri: fluxo:FLUXO_0000088
-        required: true
+        recommended: true
       objective_function:
         description: >-
           Mathematical expression for the objective function being
@@ -94,9 +134,24 @@ classes:
           isotope-based MFA where the objective is implicit (minimize
           WSSR).
         slot_uri: fluxo:FLUXO_0000223
+      isotopic_state_space:
+        description: >-
+          Isotopic state-space representation used for computation
+          (isotopomer, cumomer, EMU, or auto). A benchmarking-fairness
+          parameter — tools differ in their native representation
+          (13CFLUX2 cumomer, INCA cumomer/EMU, miemu EMU).
+        slot_uri: fluxo:FLUXO_0000146
+        range: IsotopicStateSpaceEnum
       multistart_count:
         description: >-
           Number of optimization restarts (for non-convex problems).
+        range: integer
+        minimum_value: 1
+      monte_carlo_runs:
+        description: >-
+          Number of Monte Carlo resampling runs (FreeFlux n_runs, INCA
+          montecarlo). Not a multistart count: each run resamples the
+          measurements and re-solves.
         range: integer
         minimum_value: 1
       random_seed:
@@ -104,52 +159,95 @@ classes:
           Random seed for reproducibility of stochastic optimizers.
         range: integer
       convergence_tolerance:
-        description: Solver convergence tolerance (e.g., 1e-6).
+        description: Optimizer convergence tolerance (e.g., 1e-6).
         range: float
       stop_time:
         description: >-
-          Simulation stop time for non-stationary (INST) MFA.
+          Simulation stop time for non-stationary (INST) MFA, in
+          time_unit.
         range: float
-      initial_values:
+      integration_timespan:
         description: >-
-          Initial flux (and pool size) values for warm-starting the
-          optimizer. Required in practice for isotope-based MFA
-          (INCA/influx_si); optional for FBA. The conditional rule is
-          deferred to Phase 5.
-        range: FluxSolution
-        inlined: true
+          Time grid the non-stationary simulation is evaluated on (FluxML
+          <group>@times, INCA int_tspan, FreeFlux set_timepoints), in
+          time_unit.
+        range: float
+        multivalued: true
+      time_unit:
+        description: Unit of stop_time and integration_timespan.
+        slot_uri: fluxo:FLUXO_0000221
+      solver_options:
+        description: >-
+          Every other tool setting, as key/value pairs with the tool's own
+          names: influx_si flags (--prefix, --clownr, --zc, --noopt), INCA
+          m.options keys (int_reltol, fit_starts), FreeFlux solve()
+          arguments, FluxML <simulation>@type. Tool-specific knobs live
+          here rather than in slots of their own, so the schema does not
+          change when a tool adds an option.
+        range: SolverOption
+        multivalued: true
+        inlined_as_list: true
+      variables:
+        description: >-
+          Input variable specification: which fluxes and pool sizes are
+          free, constrained or dependent, with starting values and bounds
+          (influx_si .tvar; FluxML <simulation><variables>; FreeFlux
+          ini_fluxes). Replaces the earlier initial_values slot, which
+          stored bounds in confidence-interval slots.
+        range: VariableSpecification
+        multivalued: true
+        inlined_as_list: true
+      start_time:
+        description: When the run started.
+        range: IsoDateTime
+      end_time:
+        description: When the run ended.
+        range: IsoDateTime
+      runtime_seconds:
+        description: >-
+          Wall-clock runtime in seconds. For a timing benchmark this is
+          the result.
+        range: float
+        minimum_value: 0.0
+      converged:
+        description: Whether the optimizer reported convergence.
+        range: boolean
+      solver_status:
+        description: Native solver status message or code.
+      iteration_count:
+        description: Number of optimizer iterations.
+        range: integer
+        minimum_value: 0
       flux_solution:
-        description: Estimated flux values from the simulation.
+        in_subset: [core]
+        description: >-
+          Results of the run: estimated (or reference / simulated) flux
+          values, pool sizes, simulated measurements and fit residuals.
         range: FluxSolution
         inlined: true
       goodness_of_fit:
+        in_subset: [core]
         description: Goodness-of-fit statistics for the solution.
         range: GoodnessOfFit
         inlined: true
-      isotopic_state_space:
-        description: >-
-          Isotopic state-space representation used for computation
-          (isotopomer, cumomer, or EMU). A benchmarking-fairness
-          parameter — tools differ in their native representation
-          (13CFLUX2 cumomer, INCA cumomer/EMU, miemu EMU).
-        slot_uri: fluxo:FLUXO_0000146
-        range: IsotopicStateSpaceEnum
       input_files:
+        in_subset: [core]
         description: >-
-          Native input files used for this simulation run (network,
-          measurements, tracers, constraints, configuration).
+          Native input files used for this simulation run, by id into
+          FluxoDataset.source_files (network, measurements, tracers,
+          constraints, configuration). Referenced, not inlined, so one
+          physical file is recorded once with one checksum.
         slot_uri: fluxo:FLUXO_0000266
         range: SourceFile
         multivalued: true
-        inlined_as_list: true
       output_files:
         description: >-
-          Output / results files produced by this simulation run.
-          Provenance for extracted results (NMDC has_output pattern).
+          Output / results files produced by this simulation run, by id
+          into FluxoDataset.source_files. Provenance for extracted
+          results (NMDC has_output pattern).
         slot_uri: fluxo:FLUXO_0000284
         range: SourceFile
         multivalued: true
-        inlined_as_list: true
 
   SoftwareInfo:
     class_uri: fluxo:FLUXO_0000102
@@ -157,10 +255,12 @@ classes:
       Information about the MFA software tool used for a simulation run.
     attributes:
       id:
+        in_subset: [core]
         description: Unique identifier for this software info record.
         identifier: true
         required: true
       software_name:
+        in_subset: [core]
         description: Name of the MFA software.
         range: MFASoftwareEnum
         required: true
@@ -168,25 +268,96 @@ classes:
         description: >-
           Free-text software name, used when software_name is "other".
       version:
-        description: Version of the software.
+        in_subset: [core]
+        description: >-
+          Version of the software. Recommended: input files never record
+          it. Required at the benchmark tier for completed runs.
         slot_uri: fluxo:FLUXO_0000243
-        required: true
+        recommended: true
       url:
         description: URL to the software repository or documentation.
         range: uriorcurie
 
+  SolverOption:
+    class_uri: fluxo:FLUXO_0000210
+    description: >-
+      One named tool or solver setting (a fluxomics parameter).
+    attributes:
+      key:
+        description: >-
+          Native option name, verbatim (e.g. "--clownr", "int_reltol",
+          "solver").
+        required: true
+      value:
+        description: >-
+          Option value as text; absent for a flag that takes no value.
+      description:
+        description: What the option does, when not obvious.
+
+  VariableSpecification:
+    description: >-
+      One row of a free/dependent/constrained variable specification: a
+      flux or pool size, its classification, and its starting value and
+      bounds. FLUXO has no term for this yet (new-term request).
+    attributes:
+      variable_id:
+        description: >-
+          Reaction or metabolite identifier the variable belongs to. Not
+          a typed reference: a specification may name free symbols that
+          are not network entities.
+        required: true
+      variable_kind:
+        description: Net flux, exchange flux, or pool size.
+        range: VariableKindEnum
+        required: true
+      variable_type:
+        description: Free, constrained, or dependent.
+        range: VariableTypeEnum
+      value:
+        description: >-
+          Starting value (free) or fixed value (constrained). For a
+          dependent variable any value is informational only: the tool
+          recomputes it from the free variables (influx_si writes one in
+          .tvar and ignores it).
+        range: float
+      lower_bound:
+        description: Lower bound of the variable.
+        range: float
+      upper_bound:
+        description: Upper bound of the variable.
+        range: float
+      increment:
+        description: >-
+          Step size for grid or design scans (influx_si / FluxML "inc").
+        range: float
+      ed_weight:
+        description: >-
+          Weight in experimental design (FluxML edweight).
+        range: float
+      comment:
+        description: Optional free-text comment.
+
   FluxSolution:
     class_uri: fluxo:FLUXO_0000159
     description: >-
-      The estimated flux values (and optionally pool sizes) that best
-      explain the experimental data.
+      The flux values (and optionally pool sizes) that best explain the
+      experimental data, or that were imposed for a forward simulation,
+      together with what the model predicts for each measurement.
     attributes:
       id:
+        in_subset: [core]
         description: Unique identifier for the flux solution.
         identifier: true
         required: true
+      solution_role:
+        description: >-
+          Whether the values were estimated, are known reference values
+          (synthetic benchmark truth, fluxes imposed for a forward
+          simulation), or were simulated.
+        range: SolutionRoleEnum
       flux_results:
-        description: Individual flux value estimates.
+        in_subset: [core]
+        description: Individual flux values.
         range: FluxResult
         multivalued: true
         inlined_as_list: true
@@ -197,12 +368,25 @@ classes:
         inlined_as_list: true
       simulated_mids:
         description: >-
-          Simulated MID values predicted by the model, for comparison
-          against measured MIDs (measured-vs-fitted plots, WSSR
-          re-derivation). Present when the solver exposes
-          forward-simulation output. Reuses the MIDMeasurement structure
-          with standard_deviation left unpopulated.
-        range: MIDMeasurement
+          Simulated MID values predicted by the model (measured-vs-fitted
+          plots, WSSR re-derivation, forward-simulation output).
+        range: SimulatedMID
+        multivalued: true
+        inlined_as_list: true
+      measurement_fits:
+        description: >-
+          Measured-versus-simulated value and residual for each
+          measurement (influx_si .miso.sim / .mflux.sim / .mmet.sim
+          Residual and Pvalue columns).
+        range: MeasurementFitResult
+        multivalued: true
+        inlined_as_list: true
+      scale_factors:
+        description: >-
+          Fitted measurement scale factors (one per "auto"-scaled group;
+          influx_si .pres.csv). They count towards the number of fitted
+          parameters.
+        range: ScaleFactorResult
         multivalued: true
         inlined_as_list: true
 
@@ -213,38 +397,71 @@ classes:
       uncertainty information.
     attributes:
       reaction_id:
+        in_subset: [core]
         description: Reference to the reaction in the network model.
         range: NetworkReaction
         required: true
       flux_type:
+        in_subset: [core]
         description: Type of flux (net, forward, backward, exchange).
         range: FluxTypeEnum
         required: true
       value:
+        in_subset: [core]
         description: Estimated flux value.
         slot_uri: fluxo:FLUXO_0000236
         range: float
         required: true
       lower_ci:
+        in_subset: [core]
         description: Lower bound of the confidence interval.
         slot_uri: fluxo:FLUXO_0000262
         range: float
       upper_ci:
+        in_subset: [core]
         description: Upper bound of the confidence interval.
         slot_uri: fluxo:FLUXO_0000263
         range: float
+      confidence_level:
+        in_subset: [core]
+        description: >-
+          Confidence level of lower_ci / upper_ci (e.g. 0.95). Tools
+          differ (FreeFlux 0.95 for CIs, 0.999 for its chi-square test).
+        range: float
+        minimum_value: 0.0
+        maximum_value: 1.0
       standard_deviation:
         description: Standard deviation of the flux estimate.
         slot_uri: fluxo:FLUXO_0000208
         range: float
       flux_unit:
+        in_subset: [core]
         description: Unit of the flux value (e.g., mmol/gDW/h).
         slot_uri: fluxo:FLUXO_0000219
       confidence_interval_method:
+        in_subset: [core]
         description: >-
           Method used to compute the confidence interval (profile
-          likelihood, parameter continuation, bootstrap, grid search).
+          likelihood, linearized, Monte Carlo, bootstrap, grid search).
         range: ConfidenceIntervalMethodEnum
+      variable_type:
+        description: >-
+          Output partition: whether the flux was free, constrained or
+          dependent in this fit (influx_si .tvar.sim). A choice of basis
+          — compare solutions by value, not by partition.
+        range: VariableTypeEnum
+      structural_identifiability:
+        description: >-
+          Native structural-identifiability verdict for the flux
+          (influx_si .tvar.sim Struct_identif).
+      derivation:
+        description: >-
+          How value (and its SD / CI) was derived rather than read, as a
+          formula or short note that may quote the native number (e.g.
+          "xch = xch01 / (1 - xch01) from influx_si xch01 = 0.2; SD by
+          the delta method", "xch = min(fwd, bwd)"). Absent means the
+          tool reported the value directly. The native output file
+          (output_files) keeps the raw numbers.
 
   PoolSizeResult:
     class_uri: fluxo:FLUXO_0000062
@@ -268,6 +485,11 @@ classes:
         description: Upper bound of the confidence interval.
         slot_uri: fluxo:FLUXO_0000263
         range: float
+      confidence_level:
+        description: Confidence level of lower_ci / upper_ci (e.g. 0.95).
+        range: float
+        minimum_value: 0.0
+        maximum_value: 1.0
       standard_deviation:
         description: Standard deviation of the pool size estimate.
         slot_uri: fluxo:FLUXO_0000208
@@ -278,8 +500,157 @@ classes:
       confidence_interval_method:
         description: >-
           Method used to compute the confidence interval (profile
-          likelihood, parameter continuation, bootstrap, grid search).
+          likelihood, linearized, Monte Carlo, bootstrap, grid search).
         range: ConfidenceIntervalMethodEnum
+      variable_type:
+        description: >-
+          Output partition: free, constrained or dependent in this fit.
+        range: VariableTypeEnum
+      structural_identifiability:
+        description: Native structural-identifiability verdict.
+      derivation:
+        description: >-
+          How value (and its SD / CI) was derived rather than read, as a
+          formula or short note that may quote the native number (e.g.
+          "xch = xch01 / (1 - xch01) from influx_si xch01 = 0.2; SD by
+          the delta method", "xch = min(fwd, bwd)"). Absent means the
+          tool reported the value directly. The native output file
+          (output_files) keeps the raw numbers.
+
+  SimulatedMID:
+    class_uri: fluxo:FLUXO_0000090
+    description: >-
+      A simulated isotopic measurement: the MID the model predicts for
+      one fragment. Carries no standard deviation or analytical method —
+      it was computed, not measured.
+    attributes:
+      measurement_id:
+        description: >-
+          Id of the measured MIDMeasurement this simulates, when there is
+          one.
+      metabolite_id:
+        description: Reference to the simulated metabolite.
+        range: NetworkMetabolite
+        recommended: true
+      fragment_name:
+        description: Native fragment name (e.g. INCA "Ala2").
+      measurement_spec:
+        description: Native measurement specification, verbatim.
+      atom_positions:
+        description: Atom positions covered by the fragment.
+      scaled:
+        description: >-
+          Whether the values include the fitted scale factor of an
+          "auto"-scaled group (i.e. are comparable to the raw measured
+          values) rather than being normalised model output.
+        range: boolean
+      data_points:
+        description: Simulated values, one per isotopologue (and time).
+        range: SimulatedMIDDataPoint
+        multivalued: true
+        inlined_as_list: true
+
+  SimulatedMIDDataPoint:
+    description: One simulated isotopologue value.
+    attributes:
+      isotopologue_index:
+        description: Isotopologue mass shift index (m+0, m+1, ...).
+        range: integer
+        minimum_value: 0
+        required: true
+      time_point:
+        description: Time of the value (non-stationary simulation).
+        slot_uri: fluxo:FLUXO_0000056
+        range: float
+      value:
+        description: >-
+          Simulated abundance. Not bounded: solvers emit tiny negative
+          values (e.g. -3.75e-09 in influx_si .miso.sim).
+        range: float
+        required: true
+
+  MeasurementFitResult:
+    description: >-
+      How well the fitted model reproduces one measured value: measured
+      and simulated value, SD, residual and its p-value. FLUXO has no
+      per-measurement residual term yet.
+    attributes:
+      measurement_id:
+        description: >-
+          Id of the measurement (MIDMeasurement, FluxMeasurement, ...) or
+          the native measurement name when the measurement is not
+          materialised.
+        required: true
+      isotopologue_index:
+        description: Isotopologue index, for labeling measurements.
+        range: integer
+        minimum_value: 0
+      time_point:
+        description: Sampling time, for non-stationary measurements.
+        slot_uri: fluxo:FLUXO_0000056
+        range: float
+      measured_value:
+        description: Measured value.
+        range: float
+      simulated_value:
+        description: Value predicted by the fitted model.
+        range: float
+      standard_deviation:
+        description: SD used to weight the residual.
+        slot_uri: fluxo:FLUXO_0000208
+        range: float
+      residual:
+        description: >-
+          Unweighted residual, simulated minus measured value.
+        range: float
+      weighted_residual:
+        description: >-
+          Residual divided by the SD, (simulated - measured) / SD. This is
+          what influx_si's "Residual" column and INCA's res.val report.
+        range: float
+      p_value:
+        description: >-
+          Native p-value of the residual (influx_si Pvalue column; a
+          robust z-test, not a standard test).
+        range: float
+      derivation:
+        description: >-
+          Which of the values were derived rather than read, and how
+          (e.g. "measured_value = simulated_value - weighted_residual * SD"
+          when the input measurement file was unavailable).
+
+  ScaleFactorResult:
+    description: >-
+      A fitted scale factor for one "auto"-scaled measurement group.
+    attributes:
+      measurement_id:
+        description: >-
+          Id or native name of the scaled measurement group (influx_si
+          "1:mass;F;111;108").
+        required: true
+      time_point:
+        description: Sampling time, when the factor is time-specific.
+        range: float
+      value:
+        description: Fitted scale factor.
+        range: float
+        required: true
+      standard_deviation:
+        description: Standard deviation of the scale factor.
+        range: float
+      lower_ci:
+        description: Lower bound of the confidence interval.
+        slot_uri: fluxo:FLUXO_0000262
+        range: float
+      upper_ci:
+        description: Upper bound of the confidence interval.
+        slot_uri: fluxo:FLUXO_0000263
+        range: float
+      derivation:
+        description: >-
+          How the factor was obtained when the tool does not report it
+          (e.g. "scaled / unscaled simulated measurement" for 13CFLUX v3,
+          which computes scale factors in closed form).
 
   GoodnessOfFit:
     class_uri: fluxo:FLUXO_0000212
@@ -288,19 +659,56 @@ classes:
       experimental data.
     attributes:
       wssr:
+        in_subset: [core]
         description: >-
           Weighted sum of squared residuals (variance-weighted).
         slot_uri: fluxo:FLUXO_0000086
         range: float
+      sum_squared_residuals:
+        description: Unweighted sum of squared residuals.
+        range: float
+      number_of_measurements:
+        description: Number of measured values used in the fit.
+        range: integer
+        minimum_value: 0
+      number_of_parameters:
+        description: >-
+          Number of fitted parameters (free fluxes, free pool sizes and
+          scale factors).
+        range: integer
+        minimum_value: 0
       degrees_of_freedom:
+        in_subset: [core]
         description: Degrees of freedom in the fit.
         slot_uri: fluxo:FLUXO_0000030
         range: integer
-      chi_square_p_value:
+      degrees_of_freedom_convention:
         description: >-
-          P-value from the chi-square goodness-of-fit test.
+          How degrees_of_freedom was counted when the tool does not report
+          it (e.g. "n_measurements - n_free_fluxes - n_auto_scaled_groups"
+          for 13CFLUX v3). Tools differ, so a comparison across tools needs
+          the convention.
+      chi_square_p_value:
+        in_subset: [core]
+        description: >-
+          Upper-tail p-value of the chi-square goodness-of-fit test,
+          P(X >= chi2); small values reject the fit. Always the upper
+          tail: readers convert tools that report the lower tail
+          (influx_si writes pchisq(chi2, df), so p = 1 - its value).
         slot_uri: fluxo:FLUXO_0000213
         range: float
+      chi_square_confidence_level:
+        description: >-
+          Confidence level of the chi-square acceptance test (e.g. 0.95;
+          FreeFlux uses 0.999).
+        range: float
+        minimum_value: 0.0
+        maximum_value: 1.0
+      fit_accepted:
+        description: >-
+          The tool's own verdict on whether the fit passes its
+          chi-square test.
+        range: boolean
       reduced_chi_square:
         description: >-
           Reduced chi-square statistic (WSSR / degrees of freedom).

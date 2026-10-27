@@ -3,19 +3,44 @@ name: fluxolink-enumerations
 title: FLUXO Enumerations
 description: >-
   Semantic enumerations backed by FLUXO ontology terms for software,
-  methods, file formats, analytical methods, and flux types.
+  methods, file formats, analytical methods, and flux types, plus the
+  shared types and the `core` subset.
 
 license: Apache-2.0
 
 prefixes:
   linkml: https://w3id.org/linkml/
   fluxo: http://purl.obolibrary.org/obo/
+  xsd: http://www.w3.org/2001/XMLSchema#
 
 default_prefix: fluxo
 default_range: string
 
 imports:
   - linkml:types
+
+subsets:
+  core:
+    description: >-
+      The minimal record: the fields most datasets should fill and a
+      database should index (study, cultivation, tracer design, method,
+      software, flux results with uncertainty, source files). Everything
+      else is optional detail for benchmarks and tool provenance.
+      docs/core_profile.md lists the subset; it is generated from the
+      schema by scripts/gen_core_profile.py.
+
+types:
+  IsoDateTime:
+    typeof: string
+    uri: xsd:dateTime
+    base: str
+    description: >-
+      ISO 8601 date or date-time as written in the source, with the time
+      zone optional ("2025-08-05 09:28:21", "2026-05-12T23:18:59+02:00",
+      "2026-05-12"). LinkML's datetime type maps to JSON Schema date-time,
+      which requires a UTC offset that FluxML <info><date> and solver logs
+      do not carry; inventing one would fabricate data.
+    pattern: "^\\d{4}-\\d{2}-\\d{2}([T ]\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?(Z|[+-]\\d{2}:?\\d{2})?)?$"
 
 enums:
   MFASoftwareEnum:
@@ -28,6 +53,11 @@ enums:
       13CFLUX2:
         description: 13CFLUX2 - MFA software using FluxML
         meaning: fluxo:FLUXO_0000244
+      13CFLUX3:
+        description: >-
+          13CFLUX v3 (Python package x3cflux) - third-generation
+          FluxML-based engine for stationary and non-stationary 13C-MFA
+        meaning: fluxo:FLUXO_0000106
       influx_si:
         description: influx_si - MFA software with FTBL input
         meaning: fluxo:FLUXO_0000108
@@ -44,6 +74,10 @@ enums:
       BayFlux:
         description: BayFlux - Bayesian flux estimation
         meaning: fluxo:FLUXO_0000120
+      miemu:
+        description: >-
+          miemu - EMU-based MFA fitting package. No FLUXO term yet; left
+          unmapped.
       other:
         description: >-
           Other software not listed; specify via the companion
@@ -122,6 +156,30 @@ enums:
       freeflux_csv:
         description: FreeFlux CSV format
         meaning: fluxo:FLUXO_0000230
+      jupyter_notebook:
+        description: >-
+          Jupyter notebook (.ipynb) used as a driver, e.g. a FreeFlux fit
+          scripted in a notebook.
+      freeflux_tsv:
+        description: >-
+          FreeFlux tab-separated tables (reactions.tsv, measured_MDVs.tsv,
+          ...). FreeFlux's reader rejects .csv, so this is the usual
+          FreeFlux table format.
+        meaning: fluxo:FLUXO_0000232
+      freeflux_xlsx:
+        description: FreeFlux Excel workbook tables (reactions.xlsx, ...).
+        meaning: fluxo:FLUXO_0000233
+      INCA_script:
+        description: >-
+          INCA MATLAB script (.m) that builds the model, experiments and
+          options in code. Distinct from INCA_mat, the binary container
+          INCA saves models and results in.
+      python_script:
+        description: >-
+          Python driver script (e.g. a FreeFlux .py that sets the tracer,
+          bounds and solver options the data tables omit).
+      plain_text:
+        description: Unstructured text output such as a solver log.
       INCA_mat:
         description: INCA MATLAB .mat format
         meaning: fluxo:FLUXO_0000231
@@ -143,6 +201,11 @@ enums:
       EMU:
         description: Elementary Metabolite Unit representation
         meaning: fluxo:FLUXO_0000150
+      auto:
+        description: >-
+          Let the tool choose the representation. The FluxML
+          <simulation>@method default, and the value in most real
+          <simulation> elements.
 
   AnalyticalMethodEnum:
     description: >-
@@ -248,16 +311,26 @@ enums:
   ConfidenceIntervalMethodEnum:
     description: >-
       Method used to compute confidence intervals on estimated fluxes or
-      pool sizes. No FLUXO terms; left unmapped.
+      pool sizes. Only bootstrapping has a FLUXO term so far; the other
+      values are left unmapped.
     permissible_values:
       profile_likelihood:
         description: Profile-likelihood / parameter continuation
       parameter_continuation:
         description: Parameter continuation (sensitivity-based)
       bootstrap:
-        description: Monte Carlo bootstrap resampling
+        description: Bootstrap resampling
+        meaning: fluxo:FLUXO_0000215
       grid_search:
         description: Grid search over parameter space
+      linearized:
+        description: >-
+          Linearized (Fisher-information / sensitivity-based)
+          approximation. The default in FreeFlux and INCA.
+      monte_carlo:
+        description: >-
+          Monte Carlo resampling of the measurements and re-fitting (a
+          parametric bootstrap; FreeFlux n_runs, INCA montecarlo).
       other:
         description: Other method not listed
 
@@ -288,8 +361,22 @@ enums:
         description: Metabolic network model file.
         meaning: fluxo:FLUXO_0000127
       measurements:
-        description: Measurement data file (MID, NMR, flux, pool size).
+        description: >-
+          Measurement data file of unspecified kind. Prefer the specific
+          values below when the file holds one kind of measurement, so a
+          consumer can find e.g. the mandatory MID file without parsing
+          file names.
         meaning: fluxo:FLUXO_0000089
+      mid_measurements:
+        description: >-
+          Labeling (MID / NMR / cumomer) measurement file, e.g. influx_si
+          .miso, FreeFlux measured_MDVs.tsv.
+      flux_measurements:
+        description: >-
+          Measured flux file, e.g. influx_si .mflux, FreeFlux
+          measured_fluxes.tsv.
+      pool_size_measurements:
+        description: Measured pool size file, e.g. influx_si .mmet.
       tracer:
         description: Tracer / labeled source specification file.
         meaning: fluxo:FLUXO_0000078
@@ -303,11 +390,22 @@ enums:
         description: Simulation output / results file.
         meaning: fluxo:FLUXO_0000159
       configuration:
-        description: Tool or run configuration file.
+        description: Tool or run configuration file (e.g. influx_si .opt).
+      variable_specification:
+        description: >-
+          Free / dependent / constrained variable classification with
+          starting values and bounds, e.g. influx_si .tvar, FreeFlux
+          fluxes.tsv used as initial values.
+      driver_script:
+        description: >-
+          Script that drives the tool and carries settings the data files
+          omit (FreeFlux .py setting the tracer and solver; INCA .m).
+      log:
+        description: Solver log or console output (e.g. influx_si .log).
       other:
         description: >-
-          Other role not listed; specify via the SourceFile
-          description free-text slot.
+          Other role not listed; specify via the companion role_other
+          free-text slot.
 
   DatasetTypeEnum:
     description: >-
@@ -324,3 +422,117 @@ enums:
         description: >-
           Tier-1 dataset cataloging results with minimal provenance;
           Tier-2 input content is optional.
+
+  DataOriginEnum:
+    description: >-
+      Where the measurement values in an experiment come from. Decides
+      whether cultivation metadata can exist at all (a synthetic
+      benchmark has no culture), and whether a natural-abundance
+      conversion is correct. FLUXO has no term for this distinction yet.
+    permissible_values:
+      experimental:
+        description: Values measured on a real cultivation.
+      synthetic:
+        description: >-
+          Values generated from a model (e.g. simulated MIDs with added
+          noise) to serve as a benchmark or test case.
+      simulated:
+        description: >-
+          Noise-free values computed by forward simulation of a model.
+
+  RunModeEnum:
+    description: >-
+      What a simulation run did. A run may do several of these (INCA
+      runs estimate then continuate). Distinct from fluxomics_method,
+      which names the method family, and from run_status, which says
+      whether the run happened. No FLUXO terms except forward simulation.
+    permissible_values:
+      estimation:
+        description: Flux (and pool size) estimation by fitting to data.
+      forward_simulation:
+        description: >-
+          Labeling simulation with fixed fluxes; no fitting (influx_si
+          --noopt, INCA simulate(), x3cflux compute_measurements).
+        meaning: fluxo:FLUXO_0000087
+      confidence_interval_estimation:
+        description: >-
+          Confidence-interval computation around a fitted solution (INCA
+          continuate, influx_si sensitivity analysis).
+      monte_carlo:
+        description: >-
+          Monte Carlo resampling of measurements with re-fitting (INCA
+          montecarlo, FreeFlux n_runs).
+      experimental_design:
+        description: Optimal tracer / experiment design.
+      other:
+        description: Other run mode not listed.
+
+  RunStatusEnum:
+    description: >-
+      Whether a simulation run was executed. Separates a run that never
+      ran (a FluxML <simulation> block or a prepared script) from one
+      whose results were simply not extracted.
+    permissible_values:
+      planned:
+        description: >-
+          Specified but not executed, or executed elsewhere with no
+          record here (e.g. a FluxML configuration's <simulation> block).
+      completed:
+        description: Executed to completion.
+      failed:
+        description: Executed but did not finish or did not converge.
+      unknown:
+        description: Execution state not recorded.
+
+  VariableKindEnum:
+    description: >-
+      Kind of model variable in a free/dependent/constrained variable
+      specification.
+    permissible_values:
+      net_flux:
+        description: Net flux of a reaction.
+        meaning: fluxo:FLUXO_0000027
+      exchange_flux:
+        description: Exchange flux of a reaction.
+        meaning: fluxo:FLUXO_0000028
+      forward_flux:
+        description: >-
+          Forward flux of a reaction (INCA parametrises reversible
+          reactions by directional fluxes).
+        meaning: fluxo:FLUXO_0000025
+      backward_flux:
+        description: Backward flux of a reaction.
+        meaning: fluxo:FLUXO_0000026
+      pool_size:
+        description: Metabolite pool size.
+        meaning: fluxo:FLUXO_0000062
+
+  VariableTypeEnum:
+    description: >-
+      Classification of a model variable in the stoichiometric
+      parametrisation (influx_si F/D/C, FluxML <variables>). The
+      partition is a choice of basis, not a property of the solution.
+      FLUXO has no term for it yet.
+    permissible_values:
+      free:
+        description: Free (independent) variable estimated by the fit.
+      constrained:
+        description: Variable fixed to a given value.
+      dependent:
+        description: >-
+          Variable computed from the free variables through the
+          stoichiometry; carries no value of its own.
+
+  SolutionRoleEnum:
+    description: >-
+      What a flux solution represents. A synthetic benchmark knows its
+      true fluxes, which must not be confused with an estimate.
+    permissible_values:
+      estimated:
+        description: Fitted by the run.
+      reference:
+        description: >-
+          Known true values of a synthetic benchmark, or values imposed
+          for a forward simulation.
+      simulated:
+        description: Values produced by forward simulation.

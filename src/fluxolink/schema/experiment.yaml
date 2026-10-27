@@ -29,35 +29,107 @@ classes:
       MFA study.
     attributes:
       id:
+        in_subset: [core]
         description: Unique identifier for the experiment.
         identifier: true
         required: true
       name:
         description: Human-readable name of the experiment.
       investigation_id:
-        description: Reference to the parent investigation.
+        in_subset: [core]
+        description: >-
+          Reference to the parent investigation. Recommended; required at
+          the benchmark tier (`fluxolink-validate --benchmark`).
         range: Investigation
-        required: true
+        recommended: true
       condition:
+        in_subset: [core]
         description: >-
           Reference to the cultivation condition for this experiment,
-          defined once in FluxoDataset.conditions.
+          defined once in FluxoDataset.conditions. Recommended: no native
+          format carries it, and a synthetic benchmark has no culture.
+          Required at the benchmark tier when data_origin is
+          experimental.
         range: Condition
-        required: true
+        recommended: true
+      data_origin:
+        in_subset: [core]
+        description: >-
+          Whether the measurement values are experimental, synthetic or
+          simulated. Decides whether cultivation metadata can exist and
+          whether natural-abundance handling applies.
+        range: DataOriginEnum
+      network_model_id:
+        description: >-
+          Network the experiment's metabolite and reaction references
+          resolve against. Needed for referential integrity in a dataset
+          with more than one network.
+        range: MetabolicNetworkModel
+        recommended: true
+      configuration_name:
+        description: >-
+          Native name of this experiment's configuration (FluxML
+          <configuration>@name, unique within one .fml; INCA experiment
+          id). One FluxML file with several configurations
+          (EC.fml: a_INST, b_INST, a_STAT, b_STAT) becomes one
+          LabelingExperiment per configuration, sharing one network.
+      comment:
+        description: >-
+          Free-text comment (FluxML <configuration><comment>).
       stationary:
+        in_subset: [core]
         description: >-
           Whether the experiment is isotopically stationary (true) or
-          non-stationary/INST (false). Determines whether time_point is
-          required (enforced via a cross-slot rule, deferred to Phase 5).
+          non-stationary/INST (false). Must agree with the fluxomics_method
+          of every run that uses the experiment, and a non-stationary
+          experiment needs time points on its labeling data (both checked
+          by `fluxolink-validate`).
         range: boolean
         required: true
+      nominal_time:
+        description: >-
+          Nominal time of the configuration (FluxML <configuration>@time),
+          in time_unit.
+        range: float
+      time_unit:
+        description: >-
+          Unit of every time value in this experiment (e.g. "s", "min",
+          "h"). FluxML <mlabel><timeunit>; INCA sim_tunit.
+        slot_uri: fluxo:FLUXO_0000221
+      source_files:
+        description: >-
+          Native files that carry this experiment's content (by id into
+          FluxoDataset.source_files). Attributes files to experiments
+          explicitly instead of by file-name convention (_a / _b,
+          _stat / _inst).
+        range: SourceFile
+        multivalued: true
+      flux_constraints:
+        description: >-
+          Flux constraints that apply to this experiment only (FluxML
+          per-configuration <constraints>; Syn.fml gives each
+          configuration different bounds). Network-level constraints
+          apply in addition.
+        range: FluxConstraint
+        multivalued: true
+        inlined_as_list: true
+      pool_size_constraints:
+        description: >-
+          Pool size constraints that apply to this experiment only.
+        range: PoolSizeConstraint
+        multivalued: true
+        inlined_as_list: true
       labeled_sources:
-        description: Labeled substrate (tracer mixture) specifications.
+        in_subset: [core]
+        description: >-
+          Labeled substrate (tracer mixture) specifications. Recommended
+          rather than required: FreeFlux sets the tracer in its driver
+          script, so a faithful encoding of its tables has none. Required
+          at the benchmark tier (`fluxolink-validate`).
         range: LabeledSource
         multivalued: true
         inlined_as_list: true
-        required: true
-        minimum_cardinality: 1
+        recommended: true
       mid_measurements:
         description: MID (mass isotopologue distribution) measurements.
         range: MIDMeasurement
@@ -102,10 +174,16 @@ classes:
       isotopomers mixed at specified fractions.
     attributes:
       id:
+        in_subset: [core]
         description: Unique identifier for the labeled source.
         identifier: true
         required: true
+      name:
+        description: >-
+          Native name of the tracer mixture (e.g. INCA "1-13C_Gluc"), so a
+          tracer can be referred to by the label its tool uses.
       metabolite_id:
+        in_subset: [core]
         description: >-
           Reference to the input metabolite in the network model.
         range: NetworkMetabolite
@@ -120,6 +198,7 @@ classes:
           Time-varying input profile for non-stationary experiments, as a
           textual list of values (e.g., "0.5, 1.0, 1.5").
       tracers:
+        in_subset: [core]
         description: Individual tracer isotopomers in the mixture.
         range: TracerIsotopomer
         multivalued: true
@@ -131,29 +210,41 @@ classes:
       A specific isotopically labeled form of a tracer molecule,
       defined by its labeling pattern, fraction, and purity.
     attributes:
+      name:
+        description: >-
+          Native name of this labelled form (e.g. "[1-13C]Gluc").
       labeling_pattern:
+        in_subset: [core]
         description: >-
           Labeling pattern as a binary string where 1 = labeled atom
           and 0 = unlabeled atom (e.g., "100000" for [1-13C]glucose).
+          Its length must equal the metabolite's n_tracked_atoms when
+          both are known (checked by `fluxolink-validate`).
         required: true
         pattern: "^[01xX]+$"
       tracer_fraction:
+        in_subset: [core]
         description: >-
           Proportion of this tracer isotopomer in the labeled source.
-          Should sum to <= 1.0 across all tracers for a source.
+          Fractions of one source must not sum above 1.0; a remainder
+          below 1.0 is read as natural abundance (checked by
+          `fluxolink-validate`). Recommended; required at the benchmark
+          tier.
         slot_uri: fluxo:FLUXO_0000138
         range: float
         minimum_value: 0.0
         maximum_value: 1.0
-        required: true
+        recommended: true
       isotopic_purity:
+        in_subset: [core]
         description: >-
           Purity of the isotopic label (e.g., 0.99 for 99 atom % 13C).
+          Recommended; required at the benchmark tier.
         slot_uri: fluxo:FLUXO_0000139
         range: float
         minimum_value: 0.0
         maximum_value: 1.0
-        required: true
+        recommended: true
       cost:
         description: >-
           Relative cost of this tracer, used for optimal experiment
@@ -181,24 +272,45 @@ classes:
           Reference to the measured metabolite in the network model.
         range: NetworkMetabolite
         required: true
+      fragment_name:
+        description: >-
+          Native name of the measured fragment (INCA "Ala2", FreeFlux
+          "Glu_12345"). Needed to match measured and simulated series.
+          The measurement group itself is identified by id.
+      measurement_spec:
+        description: >-
+          Native measurement specification, kept verbatim for round-trip
+          (FluxML "Ala[2,3]#M0,1,2", influx_si fragment column).
       atom_positions:
-        description: Traced atom positions (e.g., "2,3" or "1-5").
-        required: true
+        description: >-
+          Traced atom positions (e.g., "2,3" or "1-5"). Recommended;
+          required at the benchmark tier unless measurement_spec is given.
+        recommended: true
       analytical_method:
-        description: Analytical (mass spectrometry) method for this measurement.
+        description: >-
+          Analytical (mass spectrometry) method for this measurement.
+          Recommended: no simulation input format records it. Required at
+          the benchmark tier for experimental data.
         slot_uri: fluxo:FLUXO_0000190
         range: AnalyticalMethodEnum
-        required: true
+        recommended: true
       analytical_method_other:
         description: >-
           Free-text analytical method, used when analytical_method is
           "other".
-      time_point:
-        description: Measurement time point for non-stationary experiments.
+      time_points:
+        description: >-
+          Sampling-time grid of this group for non-stationary experiments
+          (FluxML <group>@times). Each data point carries its own
+          time_point; grid points with no datum stay recoverable here.
         slot_uri: fluxo:FLUXO_0000056
         range: float
+        multivalued: true
       scale_method:
-        description: Scaling method for this measurement group.
+        description: >-
+          Scaling method for this measurement group ("auto" = estimate a
+          scale factor; "one" = values are already normalised).
+        slot_uri: fluxo:FLUXO_0000161
         range: ScaleMethodEnum
       error_model_expression:
         description: >-
@@ -244,21 +356,31 @@ classes:
         description: >-
           Optional MS/MS fragment weight specifier (e.g., "2,3") for
           tandem-MS measurements.
+      time_point:
+        description: >-
+          Sampling time of this value (non-stationary experiments only),
+          in the experiment's time_unit. FluxML repeats @time per <datum>
+          and influx_si has a Time column per row.
+        slot_uri: fluxo:FLUXO_0000056
+        range: float
       value:
         description: >-
-          Measured fractional abundance of this isotopologue.
+          Measured abundance of this isotopologue. Not bounded to [0, 1]:
+          unscaled groups (scale "auto") hold raw intensities, and real
+          files carry tiny negative values. Absent for a declared but
+          unmeasured fragment (a template). Recommended; required at the
+          benchmark tier.
         range: float
-        required: true
-        minimum_value: 0.0
-        maximum_value: 1.0
+        recommended: true
       standard_deviation:
         description: >-
           Standard deviation (measurement uncertainty) of the value.
           Explicitly required by influx_si and present across all formats.
+          Recommended; required at the benchmark tier.
         slot_uri: fluxo:FLUXO_0000208
         range: float
         minimum_value: 0.0
-        required: true
+        recommended: true
 
   FluxMeasurement:
     class_uri: fluxo:FLUXO_0000124
@@ -270,27 +392,42 @@ classes:
         identifier: true
         required: true
       reaction_id:
-        description: Reference to the reaction in the network model.
+        description: >-
+          Reference to the measured reaction. Give either reaction_id or
+          flux_expression.
         range: NetworkReaction
-        required: true
+        recommended: true
+      flux_expression:
+        description: >-
+          Measured combination of fluxes when the measurement is not a
+          single reaction (FluxML <netflux> body, e.g. "R63-R63b").
       flux_type:
         description: Type of flux (net, forward, backward, exchange).
         range: FluxTypeEnum
         required: true
       value:
-        description: Measured flux value.
+        description: >-
+          Measured flux value. Absent for a declared but unmeasured flux
+          (a template). Recommended; required at the benchmark tier.
         slot_uri: fluxo:FLUXO_0000236
         range: float
-        required: true
+        recommended: true
       flux_unit:
         description: Unit of the measured flux (e.g., "mmol/gDW/h").
         slot_uri: fluxo:FLUXO_0000219
       standard_deviation:
-        description: Standard deviation of the flux measurement.
+        description: >-
+          Standard deviation of the flux measurement. Recommended;
+          required at the benchmark tier.
         slot_uri: fluxo:FLUXO_0000208
         range: float
         minimum_value: 0.0
-        required: true
+        recommended: true
+      error_model_expression:
+        description: >-
+          Error model used instead of a fixed SD (FluxML <errormodel> on
+          <netflux>; INCA "f.std = f.val/20").
+        slot_uri: fluxo:FLUXO_0000091
       time_point:
         description: Measurement time point (for non-stationary experiments).
         slot_uri: fluxo:FLUXO_0000056
@@ -313,23 +450,36 @@ classes:
         identifier: true
         required: true
       metabolite_id:
-        description: Reference to the metabolite in the network model.
+        description: >-
+          Reference to the measured metabolite. Give either metabolite_id
+          or pool_expression.
         range: NetworkMetabolite
-        required: true
+        recommended: true
+      pool_expression:
+        description: >-
+          Measured combination of pools when the signal is pooled
+          (influx_si .mmet "E+B").
       value:
-        description: Measured pool size value.
+        description: >-
+          Measured pool size value. Absent for a declared but unmeasured
+          pool (a template). Recommended; required at the benchmark tier.
         slot_uri: fluxo:FLUXO_0000062
         range: float
-        required: true
+        recommended: true
       pool_size_unit:
         description: Unit of the measured pool size (e.g., "mmol/gDW").
         slot_uri: fluxo:FLUXO_0000222
       standard_deviation:
-        description: Standard deviation of the pool size measurement.
+        description: >-
+          Standard deviation of the pool size measurement. Recommended;
+          required at the benchmark tier.
         slot_uri: fluxo:FLUXO_0000208
         range: float
         minimum_value: 0.0
-        required: true
+        recommended: true
+      error_model_expression:
+        description: Error model used instead of a fixed SD.
+        slot_uri: fluxo:FLUXO_0000091
       time_point:
         description: Measurement time point (for non-stationary experiments).
         slot_uri: fluxo:FLUXO_0000056
@@ -352,6 +502,10 @@ classes:
         description: Unique identifier for the NMR measurement group.
         identifier: true
         required: true
+      measurement_spec:
+        description: >-
+          Native measurement specification, kept verbatim for round-trip
+          (e.g. a FluxML <group> textual body).
       metabolite_id:
         description: >-
           Reference to the measured metabolite in the network model.
@@ -412,6 +566,7 @@ classes:
         required: true
 
   FluxRatioMeasurement:
+    class_uri: fluxo:FLUXO_0000029
     description: >-
       A measured flux ratio between two or more reactions.
     attributes:
@@ -468,14 +623,18 @@ classes:
       its parsed content.
     attributes:
       id:
+        in_subset: [core]
         description: Unique identifier for this source file record.
         identifier: true
         required: true
       path:
+        in_subset: [core]
         description: >-
           Relative path or URI to the file.
+        slot_uri: fluxo:FLUXO_0000297
         required: true
       format:
+        in_subset: [core]
         description: Format of the file.
         slot_uri: fluxo:FLUXO_0000229
         range: InputFormatEnum
@@ -484,15 +643,24 @@ classes:
         description: >-
           Free-text file format, used when format is "other".
       role:
+        in_subset: [core]
         description: >-
-          Role this file plays in the dataset (network, measurements,
-          tracer, etc.).
+          Role(s) this file plays in the dataset. Multivalued because one
+          file often plays several: a FluxML .fml is network, constraints,
+          tracer, measurements and simulation setup at once; an INCA .m is
+          all of those plus the driver.
         range: FileRoleEnum
+        multivalued: true
         required: true
+      role_other:
+        description: >-
+          Free-text role, used when role includes "other".
       checksum:
+        in_subset: [core]
         description: >-
           "algorithm:hash" digest (e.g., "sha256:abc123...") for
           content-integrity verification.
+        slot_uri: fluxo:FLUXO_0000288
         pattern: "^[a-z0-9]+:[0-9a-f]+$"
       media_type:
         description: >-
@@ -504,6 +672,16 @@ classes:
         minimum_value: 0
       description:
         description: Optional free-text description of the file contents.
+      generated_by:
+        description: >-
+          Tool that generated the file, when it was not authored by hand
+          (e.g. "txt2ftbl" for influx_si .def files,
+          "fluxomics_data_converter").
+      generator_version:
+        description: Version of the generating tool.
+      generation_date:
+        description: When the file was generated.
+        range: IsoDateTime
 
   Condition:
     class_uri: fluxo:FLUXO_0000218
@@ -515,29 +693,41 @@ classes:
       single cultivation is never described twice.
     attributes:
       id:
+        in_subset: [core]
         description: Unique identifier for the condition record.
         identifier: true
         required: true
       name:
         description: Human-readable name for this condition.
       organism_name:
-        description: Name of the organism (e.g., Escherichia coli).
+        in_subset: [core]
+        description: >-
+          Name of the organism (e.g., Escherichia coli). Recommended;
+          required at the benchmark tier for experimental data.
         slot_uri: fluxo:FLUXO_0000181
-        required: true
+        recommended: true
       strain:
-        description: Strain designation (e.g., BW25113).
+        in_subset: [core]
+        description: >-
+          Strain designation (e.g., BW25113). Recommended; required at the
+          benchmark tier for experimental data.
         slot_uri: fluxo:FLUXO_0000182
-        required: true
+        recommended: true
       culture_medium:
         description: Growth medium used for cultivation.
         slot_uri: fluxo:FLUXO_0000184
       specific_growth_rate:
+        in_subset: [core]
         description: >-
-          Measured specific growth rate of the organism.
+          Measured specific growth rate of the organism. No native format
+          carries it; never auto-fill it from a biomass flux. Recommended;
+          required at the benchmark tier for experimental data.
         slot_uri: fluxo:FLUXO_0000084
         range: float
-        required: true
+        recommended: true
       growth_rate_unit:
-        description: Unit for the growth rate (e.g., 1/h).
+        in_subset: [core]
+        description: >-
+          Unit for the growth rate (e.g., 1/h). Required whenever
+          specific_growth_rate is given.
         slot_uri: fluxo:FLUXO_0000219
-        required: true

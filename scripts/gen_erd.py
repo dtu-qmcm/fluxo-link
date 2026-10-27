@@ -94,12 +94,18 @@ COLUMNS: list[tuple[str, list[str]]] = [
     ),
     (
         "simulation_run",
+        ["SimulationRun", "SoftwareInfo", "SolverOption", "VariableSpecification"],
+    ),
+    (
+        "simulation_run",
         [
-            "SimulationRun",
-            "SoftwareInfo",
             "FluxSolution",
             "FluxResult",
             "PoolSizeResult",
+            "SimulatedMID",
+            "SimulatedMIDDataPoint",
+            "MeasurementFitResult",
+            "ScaleFactorResult",
             "GoodnessOfFit",
         ],
     ),
@@ -182,6 +188,8 @@ def load() -> tuple[dict[str, Cls], dict[str, int], str]:
     raw: dict[str, dict] = {}
     version = "?"
     for path in sorted(glob.glob(str(SCHEMA_DIR / "*.yaml"))):
+        if Path(path).name == "flux_record.yaml":  # a derived view, not the dataset
+            continue
         mod = os.path.basename(path)[:-5]
         doc = yaml.safe_load(Path(path).read_text()) or {}
         if doc.get("version"):

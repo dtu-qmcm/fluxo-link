@@ -37,6 +37,7 @@ def decode_positions(pattern: str) -> tuple[list[int], list[int]]:
 
 
 def atom_counts(doc: dict[str, Any]) -> dict[str, int | None]:
+    """Map every metabolite id to its n_tracked_atoms."""
     counts: dict[str, int | None] = {}
     for net in doc.get("networks") or []:
         for met in net.get("metabolites") or []:
@@ -45,6 +46,7 @@ def atom_counts(doc: dict[str, Any]) -> dict[str, int | None]:
 
 
 def report(path: Path) -> list[str]:
+    """Print Q1/Q2 answers for one dataset and return the caveats."""
     doc = yaml.safe_load(path.read_text())
     caveats: list[str] = []
     counts = atom_counts(doc)
@@ -62,7 +64,8 @@ def report(path: Path) -> list[str]:
         label = "stationary" if stat else "INSTATIONARY (INST)"
         print(f"  Q1 {exp['id']}: {label}   (stationary={stat})")
 
-        # the same fact is also encoded on the run, with no consistency rule
+        # the same fact is also encoded on the run; fluxolink-validate checks
+        # that the two agree (rule stationarity-method)
         for run in runs:
             if exp["id"] in (run.get("experiment_id") or []):
                 method = run.get("fluxomics_method")
@@ -72,25 +75,31 @@ def report(path: Path) -> list[str]:
                 if method != expected:
                     caveats.append(
                         f"stationary={stat} but fluxomics_method={method}: the two"
-                        " encodings of stationarity disagree and nothing checks it"
+                        " encodings of stationarity disagree (fluxolink-validate"
+                        " rejects IST/INST contradictions)"
                     )
-                if stat is False and "stop_time" not in run:
-                    print("       INST run has no stop_time and no time grid")
-                    caveats.append("INST run without stop_time")
+                if (
+                    stat is False
+                    and run.get("stop_time") is None
+                    and not run.get("integration_timespan")
+                ):
+                    print("       INST run has no stop_time and no integration_timespan")
+                    caveats.append("INST run without stop_time or integration_timespan")
 
         # is the flag corroborated by the data?
-        times = [
-            m.get("time_point")
-            for key in ("mid_measurements", "flux_measurements",
-                        "pool_size_measurements", "nmr_measurements")
-            for m in (exp.get(key) or [])
-        ]
+        times: list[Any] = []
+        for key in ("flux_measurements", "pool_size_measurements", "nmr_measurements"):
+            times += [m.get("time_point") for m in (exp.get(key) or [])]
+        for mid in exp.get("mid_measurements") or []:
+            times += list(mid.get("time_points") or [])
+            times += [d.get("time_point") for d in (mid.get("data_points") or [])]
         present = [t for t in times if t is not None]
         if stat is False and not present:
             print("       no measurement carries a time_point -> flag uncorroborated")
             caveats.append("INST declared but no time points recorded")
         elif stat is True and present:
-            print(f"       stationary but {len(present)} time_point(s) present: {sorted(set(present))}")
+            distinct = sorted(set(present))
+            print(f"       stationary but {len(present)} time_point(s) present: {distinct}")
             caveats.append("stationary declared while time points are present")
 
     # ---- Q2: tracers ------------------------------------------------------
@@ -102,31 +111,36 @@ def report(path: Path) -> list[str]:
     for exp in experiments:
         sources = exp.get("labeled_sources") or []
         n_tracers = sum(len(s.get("tracers") or []) for s in sources)
-        print(f"  Q2 {exp['id']}: {len(sources)} labelled substrate(s), {n_tracers} tracer form(s)")
+        print(
+            f"  Q2 {exp['id']}: {len(sources)} labelled substrate(s), {n_tracers} tracer form(s)"
+        )
         for src in sources:
             met = src.get("metabolite_id")
             n_atoms = counts.get(met)
             tracers = src.get("tracers") or []
             kind = "mixture" if len(tracers) > 1 else "single"
-            print(f"       source {src['id']}: substrate {met}"
-                  f" (n_tracked_atoms={n_atoms}) - {kind}, {len(tracers)} form(s)")
+            print(
+                f"       source {src['id']}: substrate {met}"
+                f" (n_tracked_atoms={n_atoms}) - {kind}, {len(tracers)} form(s)"
+            )
             for tr in tracers:
                 pat = tr.get("labeling_pattern", "")
                 labelled, unknown = decode_positions(pat)
                 frac = tr.get("tracer_fraction")
                 pos = ",".join(map(str, labelled)) if labelled else "none"
-                line = (f"         pattern {pat!r}  fraction {frac}"
-                        f"  -> labelled position(s): {pos}")
+                line = f"         pattern {pat!r}  fraction {frac}  -> labelled position(s): {pos}"
                 if unknown:
                     line += f"; UNSPECIFIED at {unknown}"
                 print(line)
-                # a check the schema declines to make
+                # rejected by fluxolink-validate (rule labeling-pattern-length)
                 if n_atoms is not None and len(pat) != n_atoms:
-                    print(f"           !! pattern length {len(pat)} != n_tracked_atoms"
-                          f" {n_atoms} - positions are meaningless, yet this VALIDATES")
+                    print(
+                        f"           !! pattern length {len(pat)} != n_tracked_atoms"
+                        f" {n_atoms} - positions are meaningless"
+                    )
                     caveats.append(
                         f"{exp['id']}/{src['id']}: pattern length {len(pat)} !="
-                        f" n_tracked_atoms {n_atoms} (unenforced)"
+                        f" n_tracked_atoms {n_atoms}"
                     )
                 if n_atoms is None:
                     caveats.append(
@@ -138,13 +152,13 @@ def report(path: Path) -> list[str]:
                     f"{exp['id']}/{src['id']}: labelled ELEMENT unrecorded"
                     " (13C vs 15N vs 2H) - no tracer-element slot"
                 )
-                if "name" not in tr and "id" not in tr:
+                if "name" not in tr and "name" not in src:
                     caveats.append(
-                        f"{exp['id']}/{src['id']}: tracer NAME unrecorded"
-                        " (TracerIsotopomer has no id/name slot)"
+                        f"{exp['id']}/{src['id']}: tracer name not recorded"
+                        " (TracerIsotopomer.name / LabeledSource.name)"
                     )
             total = sum(t.get("tracer_fraction") or 0 for t in tracers)
-            flag = "" if total <= 1.0 + 1e-9 else "   *** EXCEEDS 1.0, yet VALIDATES ***"
+            flag = "" if total <= 1.0 + 1e-9 else "   *** EXCEEDS 1.0 ***"
             print(f"         fraction sum = {round(total, 6)}{flag}")
             if total > 1.0 + 1e-9:
                 caveats.append(f"{exp['id']}/{src['id']}: fractions sum to {total}")
@@ -153,12 +167,15 @@ def report(path: Path) -> list[str]:
     for run in runs:
         exp_ids = run.get("experiment_id") or []
         if len(exp_ids) > 1:
-            print(f"  Q2 {run['id']}: PARALLEL labeling - {len(exp_ids)} experiments"
-                  f" jointly fitted {exp_ids}")
+            print(
+                f"  Q2 {run['id']}: PARALLEL labeling - {len(exp_ids)} experiments"
+                f" jointly fitted {exp_ids}"
+            )
     return caveats
 
 
 def main(argv: list[str]) -> int:
+    """Report on every dataset file given and list the caveats."""
     all_caveats: list[tuple[str, str]] = []
     for arg in argv:
         for c in report(Path(arg)):

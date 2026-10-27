@@ -30,9 +30,12 @@ src/fluxolink/
 │   ├── network.yaml         # Metabolic network model (metabolites, reactions, atom transitions)
 │   ├── experiment.yaml      # Labeling experiments (tracers, measurements) + cultivation Condition
 │   └── simulation_run.yaml  # Simulation runs (software, flux solutions, goodness-of-fit)
-└── datamodel/               # Auto-generated Python datamodel from LinkML
+├── datamodel/               # Auto-generated Python datamodel from LinkML
+├── validate.py              # fluxolink-validate: references, cross-slot rules, benchmark tier
+└── flatten.py               # fluxolink-flatten: one row per run x reaction (schema/flux_record.yaml)
 tests/                       # Pytest test suite
-examples/                    # Example data files (valid + invalid fixtures)
+examples/                    # valid/ + invalid/ fixtures; benchmark/ = full EC dataset
+scripts/                     # check_runnable.py, query_tracers.py, gen_erd.py, gen_core_profile.py
 project/                     # Project configuration (gen-project outputs)
 ```
 
@@ -54,6 +57,7 @@ project/                     # Project configuration (gen-project outputs)
 | `uv sync --extra dev` | Install all dependencies |
 | `uv pip install -e ".[dev]"` | Editable install with dev extras |
 | `uv run pytest` | Run test suite |
+| `uv run fluxolink-validate FILE [--benchmark]` | Schema + semantic + tier validation of a dataset |
 | `uv run ruff check src tests` | Lint Python code |
 | `uv run ruff format --check src tests` | Check formatting |
 | `uv run mypy src` | Type-check |
@@ -79,7 +83,7 @@ project/                     # Project configuration (gen-project outputs)
 
 ## Agent Workflow
 
-1. **Schema changes:** Edit `.yaml` files in `src/fluxolink/schema/`, then regenerate `datamodel/`
+1. **Schema changes:** Edit `.yaml` files in `src/fluxolink/schema/`, then regenerate `datamodel/` (`just gen-pydantic`), the ER diagram (`just erd`) and the core profile (`just core-profile`). Tool-specific knobs belong in `SimulationRun.solver_options`, not in new slots or enums: the record keeps normalised, tool-neutral facts, and the checksummed native files keep the rest. A field that only some formats supply is `recommended`, not `required`; if benchmarks need it, add it to the benchmark tier in `src/fluxolink/validate.py` and `VALIDATION_REQUIREMENTS.md`
 2. **Python changes:** Edit `.py` files in `src/fluxolink/` or `tests/`
 3. **After any change:** Run `uv run ruff check src tests && uv run pytest`
 4. **Before committing:** Run `uv run pre-commit run --all-files`

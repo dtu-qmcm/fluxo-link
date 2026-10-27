@@ -37,13 +37,18 @@ def test_valid_examples_pass(name: str) -> None:
 
 @pytest.mark.integration
 def test_invalid_example_is_rejected() -> None:
-    """The invalid dataset must fail on the intentionally-omitted required fields."""
+    """The invalid dataset must fail on the intentionally-omitted required fields.
+
+    Only slots that stay schema-required are tested here. Tracer fractions,
+    purities and MID standard deviations moved to the benchmark gate on
+    2026-10-25 and are covered by tests/test_validate.py.
+    """
     result = _validate(EXAMPLES / "invalid" / "missing_required_fields.yaml")
     assert result.returncode != 0, "expected validation to fail but it passed"
     output = result.stdout + result.stderr
-    assert "tracer_fraction" in output
-    assert "isotopic_purity" in output
-    assert "standard_deviation" in output
+    for slot in ("labeling_pattern", "isotopologue_index", "stationary", "software_name"):
+        assert f"'{slot}' is a required property" in output, slot
+    assert "'value' is a required property" in output
 
 
 @pytest.mark.integration
@@ -121,3 +126,20 @@ def test_conditions_are_referenced_not_inlined() -> None:
     for run in doc["simulation_runs"]:
         if "condition" in run:
             assert run["condition"] in declared
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("name", [p.name for p in sorted((EXAMPLES / "benchmark").glob("*.yaml"))])
+def test_benchmark_datasets_pass_the_benchmark_gate(name: str) -> None:
+    """Full benchmark datasets pass the schema and the benchmark-tier checks.
+
+    examples/benchmark/ holds converter-generated datasets (the complete EC
+    model from EC.fml), so this is also an end-to-end check that the
+    converter's output satisfies the tier it claims.
+    """
+    from fluxolink.validate import ERROR, validate_file
+
+    path = EXAMPLES / "benchmark" / name
+    assert _validate(path).returncode == 0
+    errors = [str(i) for i in validate_file(path, benchmark=True) if i.severity == ERROR]
+    assert errors == []

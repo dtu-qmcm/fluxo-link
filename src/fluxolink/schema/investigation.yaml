@@ -3,8 +3,8 @@ name: fluxolink-investigation
 title: FLUXO Investigation Module
 description: >-
   Investigation-level provenance classes for fluxomics investigations,
-  including contributors, cultivation conditions, and publication
-  metadata.
+  including contributors and publication metadata. Cultivation
+  conditions live in the experiment module.
 
 license: Apache-2.0
 
@@ -28,18 +28,22 @@ classes:
       experiments or simulation studies.
     attributes:
       id:
+        in_subset: [core]
         description: Unique identifier for the investigation.
         identifier: true
         required: true
       name:
+        in_subset: [core]
         description: Human-readable name of the investigation.
         required: true
       description:
         description: Detailed description of the investigation.
       publication_doi:
+        in_subset: [core]
         description: DOI of the associated publication.
         range: uriorcurie
       investigation_type:
+        in_subset: [core]
         description: >-
           Kind of fluxomics investigation this is (FLUXO:0000162
           subtree). Distinct from SimulationRun.fluxomics_method: the

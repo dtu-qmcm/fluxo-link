@@ -17,6 +17,18 @@ gen-pydantic:
 validate-examples:
     uv run linkml-validate -s src/fluxolink/schema/fluxolink.yaml examples/valid/*.yaml
 
+# Schema + semantic validation (fluxolink-validate) of every example
+check-examples:
+    uv run fluxolink-validate examples/valid/*.yaml examples/benchmark/*.yaml
+
+# Regenerate docs/core_profile.md from the `core` subset of the schema
+core-profile:
+    uv run python scripts/gen_core_profile.py
+
+# SQL DDL for the flat flux table (one row per run x reaction x flux type)
+gen-sql:
+    uv run gen-sqlddl src/fluxolink/schema/flux_record.yaml > docs/flux_record.sql
+
 # Run the test suite
 test:
     uv run pytest

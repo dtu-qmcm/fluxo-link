@@ -78,6 +78,290 @@ Project change log. Updated by the AI agent as changes are made.
 
 ---
 
+## Simplification: Format Mechanics Out, Core Profile + Flat Table In (2026-10-26)
+
+`removed` `added` `schema` `docs` — breaking for documents that used the removed slots
+
+### Why
+
+The 2026-10-25 pass aimed for lossless round-trips of five file formats, and
+that pulled format mechanics into the standard: 218 → 347 slots, 66 → 132
+enum values. Lossless round-tripping is the converter's job. The checksummed
+native files already preserve everything, so the record should hold only
+normalised, tool-neutral facts.
+
+### Removed (moved into `solver_options`, the converter, or the native files)
+
+- **5 enums:** `SimulationTypeEnum`, `ExpressionNotationEnum`,
+  `ConstraintOperatorEnum`, `ChiSquareTailEnum`, `MeasurementKindEnum`.
+- **Constraints:** `FluxConstraint` / `PoolSizeConstraint` lose `operator`
+  (it is in `expression`) and `expression_notation` (a MathML expression is
+  kept verbatim and is recognisable by its leading `<`).
+- **`SimulationRun`:**
+  - `simulation_type`, `integration_rel_tolerance` and
+    `integration_abs_tolerance` move to `solver_options`.
+  - `file_prefix` moves to `solver_options` as `--prefix`; it is also in
+    `command_line`.
+- **`FluxResult` / `PoolSizeResult`:** `native_value` and
+  `native_standard_deviation` are gone. `derivation` now quotes the native
+  number (e.g. "… from influx_si xch01 = 0.2").
+- **`MeasurementFitResult.measurement_kind`:** derivable from the measurement
+  it points to.
+- **`GoodnessOfFit.chi_square_tail`:** `chi_square_p_value` is now *always*
+  the upper tail. Readers convert influx_si's lower tail (1 − p), and the
+  `chi-square-tail` validator rule is gone.
+
+**Result:** 21 enums / 113 values (was 26 / 132), 333 slots (was 347), 35
+`SimulationRun` fields (was 39). Fixtures, the EC benchmark (regenerated) and
+the converter's adapter, results readers and tests are updated.
+
+### Added
+
+- **`core` subset** (`in_subset: [core]`): 59 fields in 12 classes — the
+  minimal record most datasets should fill and a database should index.
+  - `docs/core_profile.md` is generated from it (`just core-profile`;
+    `tests/test_flatten.py` fails if the page is stale).
+  - `examples/valid/minimal_core_record.yaml` is a complete core record, with
+    illustrative values.
+- **Flat table for databases:**
+  - `src/fluxolink/schema/flux_record.yaml` defines one row per run ×
+    reaction × flux type, with the study context denormalised.
+  - `fluxolink-flatten` (`src/fluxolink/flatten.py`) writes it as TSV, CSV,
+    JSONL or YAML.
+  - `just gen-sql` writes SQL DDL (`docs/flux_record.sql`).
+  - The dataset documents stay the record of truth; the table is rebuilt from
+    them.
+- **Convention, recorded in AGENTS.md:** tool-specific knobs go to
+  `solver_options`, never new slots or enums.
+
+### Verified
+
+- fluxolink: 92 tests pass. All 12 valid fixtures and the EC benchmark give
+  0 errors.
+- converter: 445 pass. 2 FluxML-writer round-trip tests fail because of the
+  uncommitted `io/fluxml_writer.py` / `io/fluxml_parser.py` changes (purity
+  is no longer written by default). With the committed versions of those
+  files they pass.
+
+---
+
+## Phase 3t Compatibility Pass + `fluxolink-validate` (2026-10-25)
+
+`added` `changed` `fixed` `schema` `validation` `examples` — 3t-1 … 3t-6 and 3t-13 done; 3t-7 … 3t-12 partly
+
+### Why
+
+The 2026-10-25 project review listed what still did not work:
+- the schema bugs of 3t-2;
+- `EC.fml` could not be represented;
+- the fixtures carried invented values;
+- a catalog record could not say how to re-run its tool (63 gaps in
+  `check_runnable.py`).
+
+This pass fixes the schema side of all four. The converter-side work
+(adapter, equivalence diff, results readers, `fluxo` CLI) lives in
+`fluxomics_data_converter/src/fluxomics_data_converter/fluxolink/`.
+
+### Required set tiered; benchmark gate in Python (3t-1)
+
+Every `required` → `recommended` row of 3t-1 is applied. The strict set comes
+back at the benchmark tier in **`src/fluxolink/validate.py`**, exposed as the
+`fluxolink-validate` console script (rule `benchmark-required`). LinkML cannot
+do this itself because `slot_conditions` cannot nest.
+
+Refinement: the cultivation fields are required at the benchmark tier only for
+`LabelingExperiment.data_origin: experimental` (new `DataOriginEnum`). A
+synthetic benchmark has no culture.
+
+### Semantic validation (new)
+
+`fluxolink-validate` runs LinkML first, then checks:
+- references (JSON Schema does not check foreign keys);
+- `stationary` vs `fluxomics_method`;
+- tracer-fraction sums and labeling-pattern length;
+- one atom mapped twice, which is the INCA v51 contradiction;
+- participant instance uniqueness and atom-index range;
+- CI order, INST time points and the chi-square tail;
+- `*_other` companions.
+
+All rules are listed in `VALIDATION_REQUIREMENTS.md` (rewritten, 3t-13).
+`schema_issues()` merges imports up front, so in-process validation no longer
+depends on the working directory.
+
+### Schema
+
+- **3t-2:**
+  - `aliases` are multivalued with a `tool:native_id` pattern.
+  - Atom indices are 1-based.
+  - `MIDDataPoint.value` is unbounded.
+  - `SourceFile.role` is multivalued, plus `role_other`.
+  - `input_files` / `output_files` are references.
+  - `PoolSizeConstraint` is unmapped.
+  - `IsotopicStateSpaceEnum.auto` is added.
+  - New `SimulatedMID` / `SimulatedMIDDataPoint` classes.
+- **3t-3:**
+  - Constraint targets are optional, with expressions able to stand alone.
+  - New slots: `flux_type` (the domain), `operator`, `expression_notation`,
+    `is_auto_generated`.
+  - `SourceFile.generated_by` / `generator_version` / `generation_date`.
+- **3t-4:** One FluxML `<configuration>` = one `LabelingExperiment`.
+  - New experiment slots: `configuration_name`, `nominal_time`, `comment`,
+    `time_unit`, `network_model_id`, `source_files`.
+  - Constraints can be scoped to one configuration.
+  - The `<simulation>` block becomes a `planned` `SimulationRun`.
+  - New `SimulationRun.configuration_name`.
+- **3t-5:**
+  - New `VariableSpecification` on `SimulationRun.variables`, which replaces
+    `initial_values`.
+  - `variable_type` and `structural_identifiability` on results.
+- **3t-6:** New result classes:
+  - `MeasurementFitResult` and `ScaleFactorResult`.
+  - GoodnessOfFit gains `sum_squared_residuals`, `number_of_measurements`,
+    `number_of_parameters`, `chi_square_tail`, `chi_square_confidence_level`,
+    `fit_accepted`.
+  - `confidence_level` on results.
+  - New run slots:
+    - invocation: `run_mode`, `run_status`, `command_line`, `file_prefix`,
+      `solver_options` (`SolverOption`);
+    - integration: tolerances, `integration_timespan`, `time_unit`;
+    - provenance: start/end/runtime, `converged`, `solver_status`,
+      `iteration_count`;
+    - other: `monte_carlo_runs`, `solution_role`.
+- **3t-7 / 3t-9 / 3t-10, partly:**
+  - Measurement identity: `fragment_name`, `measurement_spec`,
+    `flux_expression`, `pool_expression`, error models on flux and pool
+    measurements.
+  - Atom transitions: `ReactionParticipant.instance` with
+    reactant/product instances, dangling atoms (product side optional),
+    `AtomTransition.element`.
+  - Metabolites: `NetworkMetabolite.is_external` / `is_balanced` /
+    `symmetry`; `NetworkReaction.pathway` / `is_auto_generated`.
+  - Time: `MIDDataPoint.time_point` with the `MIDMeasurement.time_points`
+    grid (the group-level `time_point` is removed).
+  - Network metadata: `description`, `version`, `modeler`, `model_date`,
+    default flux bounds.
+- **Types and enums:**
+  - New `IsoDateTime` type: an ISO 8601 date-time with an optional time zone.
+    FluxML `<info><date>` has no zone, and JSON Schema `date-time` would force
+    one to be invented.
+  - New enums: `RunModeEnum`, `RunStatusEnum`, `SimulationTypeEnum`,
+    `VariableKindEnum`, `VariableTypeEnum`, `ConstraintOperatorEnum`,
+    `ExpressionNotationEnum`, `SolutionRoleEnum`, `ChiSquareTailEnum`,
+    `MeasurementKindEnum`, `DataOriginEnum`.
+  - New values on existing enums: `13CFLUX3`, `miemu`, `freeflux_tsv`,
+    `freeflux_xlsx`, `INCA_script`, `python_script`, `jupyter_notebook`,
+    `plain_text`; specific measurement / variable-specification /
+    driver-script / log file roles; `linearized` and `monte_carlo` CI
+    methods.
+- **New FLUXO mappings:** FLUXO_0000161, 0000029, 0000297, 0000288, 0000215,
+  0000106, 0000232, 0000233, 0000090, 0000210, 0000064, 0000132, 0000221.
+  FLUXO_0000302–0000306, cited by the plan for CI methods, do not exist in the
+  2026-09-04 release.
+- **Counts:** 36 classes, 26 enums (was 30 / 15).
+
+### Examples
+
+- **All 11 valid fixtures migrated**, and every `FABRICATED` value deleted. Most
+  `LOST` markers are now data; the remaining ones are listed in each file
+  header.
+- **Reclassified as `catalog`:** the four "materialised" corpus encodings. They
+  hold Tier-2 content, but their sources are not benchmark-complete:
+  - no tracer purity in `.linp` / `linea.fml` / `EC.m`;
+  - INCA's AKG5 has no values;
+  - no FreeFlux version recorded.
+
+  `fluxolink-validate --benchmark` lists exactly what is missing.
+- **Illustrative fixtures:** organism, strain and growth-rate values that no
+  source supports were removed. `data_origin: synthetic` is set.
+- **`missing_required_fields.yaml`** now fails on slots that stay
+  schema-required.
+
+### Scripts and docs
+
+- **`scripts/check_runnable.py`** resolves `input_files` ids, multivalued roles,
+  `file_prefix`, `configuration_name`, driver scripts and `run_mode`. It treats
+  a run whose inputs are materialised as regenerable. Unresolvable items went
+  from 63 to 2, both in illustrative fixtures that record no invocation.
+- **`scripts/query_tracers.py`** reads data-point time points, and its
+  "unchecked" claims now point at the validator rules.
+- **ER diagram** regenerated (`just erd`). The simulation module is split over
+  two columns.
+- **Plan docs:** `IMPLEMENTATION_PLAN.md` sections 3t-1 … 3t-13 carry status
+  blocks, and `PATH_FORWARD.md` has a status note.
+
+### Second round, driven by the converter adapter and results readers
+
+The converter work turned up more schema gaps, closed the same day:
+
+- **More fields demoted to `recommended`, re-imposed at the benchmark tier:**
+  - `NetworkReaction.reactants`: pure influx reactions. The new rule
+    `reaction-participants` still requires at least one participant.
+  - `LabelingExperiment.labeled_sources`: FreeFlux keeps the tracer in its
+    driver script.
+  - `FluxMeasurement.value` / `PoolSizeMeasurement.value`: templates.
+- **New slots:**
+  - `NMRIsotopomerMeasurement.measurement_spec`.
+  - On flux and pool size results: `native_value`,
+    `native_standard_deviation`, `derivation`. These hold influx_si's raw
+    xch01 next to the absolute exchange flux, and mark FreeFlux's
+    `min(fwd, bwd)` exchange as derived.
+  - `MeasurementFitResult.derivation`.
+  - `ScaleFactorResult.lower_ci` / `upper_ci` / `derivation`.
+  - `GoodnessOfFit.degrees_of_freedom_convention`.
+  - `SimulatedMID.scaled`.
+  - `MetabolicNetworkModel.default_flux_lower_bound` /
+    `default_flux_upper_bound`.
+- **New enum values:** `VariableKindEnum` `forward_flux` / `backward_flux`
+  (INCA), and `InputFormatEnum.jupyter_notebook`.
+- **`MeasurementFitResult.residual`** is now documented as unweighted. influx_si's
+  "Residual" column and INCA's `res.val` are `weighted_residual`.
+- **Validator:**
+  - `ci-order` errors on `lower_ci > upper_ci`. An interval that excludes its
+    value is now only a warning for Monte Carlo and bootstrap intervals.
+  - New `mid-placeholder` warning for a group whose values are all 0.0.
+  - The benchmark tier also requires `labeled_sources` and flux/pool
+    measurement values.
+
+### EC benchmark dataset
+
+`examples/benchmark/ec_fluxml_benchmark.yaml` (370 KB) is generated from
+`EC.fml` by the converter's `to_fluxo_dataset`. It holds:
+- 62 metabolites, 100 reactions, 31 constraints;
+- 4 configurations (68 MID groups);
+- 4 planned 13CFLUX2 runs;
+- an investigation from a sidecar, and no Condition (synthetic data).
+
+It passes `fluxolink-validate --benchmark` with 0 errors and 103 warnings:
+- **68 `mid-placeholder`:** every MID datum in EC.fml is 0.0 with SD 0.1;
+- **35 `atom-transitions-missing`:** the FluxML parser keeps no atom data for
+  efflux reactions.
+
+`tests/test_examples.py` checks it end to end.
+
+### Converter side (fluxomics_data_converter, uncommitted)
+
+- **`fluxolink/materialise.py`, `hydrate.py`, `equivalence.py`:** dataset ↔
+  converter model, plus a normalised equivalence diff.
+- **`fluxolink/results/`:** readers for influx_si `<prefix>_res/` and INCA
+  `.mat` files, and for FreeFlux and 13CFLUX v3 live result objects.
+- **`fluxolink/cli.py`:** the `fluxo` command — `ingest`, `validate`,
+  `compare [--inputs]`, `export`, `meta init`.
+- **Packaging:** optional extra `linkml = ["fluxolink"]` with a uv path source
+  to this repo.
+- **Tests:** 432 converter tests pass, 2 xfailed (376 before).
+
+### Verified
+
+- 84 tests pass (was 32): `tests/test_validate.py` has 51, and
+  `tests/test_examples.py` now also checks the benchmark dataset.
+- `ruff check`, `ruff format --check` and `mypy src` are clean; `linkml-lint`
+  shows only the pre-existing `canonical_prefixes` warning; yamllint reports no
+  errors on schema and examples.
+- `fluxolink-validate` reports 0 errors on all 11 valid fixtures and on the EC
+  benchmark (with `--benchmark`).
+
+---
+
 ## Ontology-Grounded Method Enums, `Condition` Hoist, Tier-Rule Fix (2026-09-18)
 
 `fixed` `changed` `schema` `ontology` `validation` — Phase 3t-0 closed; 3t-1 advanced

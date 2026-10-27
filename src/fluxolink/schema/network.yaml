@@ -31,17 +31,35 @@ classes:
         required: true
       name:
         description: Human-readable name of the network model.
+      description:
+        description: >-
+          Free-text description or comment (FluxML <info><comment>;
+          often cites the source publication).
+      version:
+        description: Model version (FluxML <info><version>).
+      modeler:
+        description: Person who built the model (FluxML <info><modeler>).
+      model_date:
+        description: >-
+          Date and time the model was created or last edited (FluxML
+          <info><date>). Distinct from FluxoDataset.creation_date, which
+          dates the dataset, not the model.
+        range: IsoDateTime
       compartments:
         description: List of compartment names in the model.
         slot_uri: fluxo:FLUXO_0000058
         multivalued: true
       metabolites:
-        description: Metabolite definitions in the network.
+        description: >-
+          Metabolite definitions in the network. Recommended rather than
+          required: INCA derives metabolites from reaction strings, so a
+          faithful INCA encoding may list reactions only. A benchmark-tier
+          dataset must list them (enforced by `fluxolink-validate
+          --benchmark`).
         range: NetworkMetabolite
         multivalued: true
         inlined_as_list: true
-        required: true
-        minimum_cardinality: 1
+        recommended: true
       reactions:
         description: Reaction definitions in the network.
         range: NetworkReaction
@@ -49,16 +67,29 @@ classes:
         inlined_as_list: true
         required: true
         minimum_cardinality: 1
+      default_flux_lower_bound:
+        description: >-
+          Lower bound applied to every flux that has no explicit bound
+          (INCA m.rates.flx.lb scalar default).
+        range: float
+      default_flux_upper_bound:
+        description: >-
+          Upper bound applied to every flux that has no explicit bound
+          (INCA m.rates.flx.ub scalar default).
+        range: float
       flux_constraints:
         description: >-
           Constraints on reaction flux values (bounds, equalities,
-          linear-combination constraints).
+          linear-combination constraints) shared by every experiment on
+          this network. Experiment-specific constraints live on
+          LabelingExperiment.flux_constraints.
         range: FluxConstraint
         multivalued: true
         inlined_as_list: true
       pool_size_constraints:
         description: >-
-          Constraints on metabolite pool size values.
+          Constraints on metabolite pool size values shared by every
+          experiment on this network.
         range: PoolSizeConstraint
         multivalued: true
         inlined_as_list: true
@@ -104,12 +135,32 @@ classes:
         slot_uri: fluxo:FLUXO_0000061
         range: boolean
         ifabsent: "false"
+      is_external:
+        description: >-
+          Whether the metabolite lies outside the system boundary (a
+          substrate or product pool such as Gluc.ext). Not the same as
+          is_pseudo. No FLUXO term yet.
+        range: boolean
+      is_balanced:
+        description: >-
+          Whether the metabolite is mass-balanced. INCA can exclude a
+          metabolite from the balance (e.g. Glyc.ext). No FLUXO term yet.
+        range: boolean
+      symmetry:
+        description: >-
+          Atom-position permutation under which the molecule is
+          symmetric, written as the 1-based positions in permuted order
+          (e.g. "4,3,2,1" for succinate). INCA declares symmetry once per
+          metabolite; FluxML expresses it through reaction variants.
+        slot_uri: fluxo:FLUXO_0000064
       aliases:
         description: >-
           Tool-namespaced alternative identifiers (e.g.,
           "influx_si:v5", "freeflux:R1"). The canonical↔native ID
           mapping is new information present in no native file — it
           lives in the dataset, once per entity.
+        multivalued: true
+        pattern: "^[^:\\s]+:\\S+$"
 
   NetworkReaction:
     class_uri: fluxo:FLUXO_0000005
@@ -122,6 +173,11 @@ classes:
         required: true
       name:
         description: Human-readable reaction name.
+      pathway:
+        description: >-
+          Pathway the reaction belongs to (FluxML
+          <annotation name="pathway">, the most common annotation in the
+          corpus; FreeFlux section rows).
       reversibility:
         description: >-
           Whether the reaction can proceed in both directions.
@@ -133,18 +189,20 @@ classes:
         description: The type of reaction.
         range: ReactionTypeEnum
       reactants:
-        description: Reactant (educt) participants consumed by the reaction.
+        description: >-
+          Reactant (educt) participants consumed by the reaction.
+          Recommended rather than required: a pure influx reaction
+          ("-> X", MTF "X ()") has none. Every reaction needs at least
+          one reactant or product (checked by `fluxolink-validate`).
         range: ReactionParticipant
         multivalued: true
         inlined_as_list: true
-        required: true
-        minimum_cardinality: 1
+        recommended: true
       products:
         description: >-
           Product participants produced by the reaction. Recommended
           rather than strictly required because boundary reactions
-          (sink, demand) legitimately have no products; a conditional
-          rule (required unless boundary reaction) is deferred to Phase 5.
+          (sink, demand, efflux) legitimately have no products.
         range: ReactionParticipant
         multivalued: true
         inlined_as_list: true
@@ -153,12 +211,10 @@ classes:
         description: >-
           Atom transition variants for this reaction. Multiple variants
           exist when symmetric compounds create ambiguity in atom
-          transitions. Recommended rather than required: isotope-based
-          MFA requires transitions for reactions among carbon-tracked
-          metabolites, but stoichiometry-based methods (FBA) and
-          reactions among untracked metabolites have none. The
-          conditional rule (required when n_tracked_atoms > 0) is
-          deferred to Phase 5.
+          transitions; FluxML participant-level <variant>s are expanded
+          to their Cartesian product here (EC.fml R25 → R25___1 …
+          R25___4). Recommended rather than required: stoichiometry-based
+          methods and reactions among untracked metabolites have none.
         range: AtomTransitionVariant
         multivalued: true
         inlined_as_list: true
@@ -175,12 +231,19 @@ classes:
         slot_uri: fluxo:FLUXO_0000065
         range: boolean
         ifabsent: "false"
+      is_auto_generated:
+        description: >-
+          Whether the reaction was created by a converter rather than
+          authored (e.g. drain reactions added for external pools).
+        range: boolean
       aliases:
         description: >-
           Tool-namespaced alternative identifiers (e.g.,
           "influx_si:v5", "freeflux:R1"). The canonical↔native ID
           mapping is new information present in no native file — it
           lives in the dataset, once per entity.
+        multivalued: true
+        pattern: "^[^:\\s]+:\\S+$"
 
   ReactionParticipant:
     class_uri: fluxo:FLUXO_0000185
@@ -201,6 +264,16 @@ classes:
         slot_uri: fluxo:FLUXO_0000205
         range: float
         ifabsent: float(1.0)
+      instance:
+        description: >-
+          1-based occurrence index for a metabolite that appears more
+          than once on the same side of a reaction (INCA v51
+          "Pyr (abc) + Pyr (def)"; MTF R5 "E (d) + E (e)"). Each
+          occurrence is its own participant, and atom transitions name
+          the occurrence they come from. Defaults to 1.
+        range: integer
+        minimum_value: 1
+        ifabsent: int(1)
 
   AtomTransitionVariant:
     class_uri: fluxo:FLUXO_0000224
@@ -211,14 +284,17 @@ classes:
     attributes:
       variant_id:
         description: >-
-          Identifier for this variant (e.g., "SCS___1", "SCS___2").
+          Identifier for this variant (e.g., "SCS___1", "SCS___2"). For
+          FluxML space-separated multi-ID reactions
+          (id="R25___1 R25___2 R25___3 R25___4") each ID is one variant.
         required: true
       ratio:
         description: >-
           Likelihood (0.0-1.0) of this atom-transition variant, used for
           scrambling reactions where symmetric compounds make the atom
-          mapping ambiguous. Should sum to 1.0 across all variants of a
-          reaction.
+          mapping ambiguous. When given for every variant of a reaction
+          the ratios should sum to 1.0; FreeFlux, INCA and many FluxML
+          files carry no ratio and leave it absent.
         range: float
         minimum_value: 0.0
         maximum_value: 1.0
@@ -232,7 +308,8 @@ classes:
     class_uri: fluxo:FLUXO_0000155
     description: >-
       A single atom-to-atom mapping from a reactant atom to a product
-      atom in a reaction.
+      atom in a reaction. The product side is absent when a tracked atom
+      leaves the system (efflux reactions with no product).
     attributes:
       reactant_metabolite_id:
         description: >-
@@ -240,27 +317,47 @@ classes:
           atom.
         range: NetworkMetabolite
         required: true
+      reactant_instance:
+        description: >-
+          Occurrence index (ReactionParticipant.instance) of the reactant
+          molecule the atom comes from. Defaults to 1.
+        range: integer
+        minimum_value: 1
+        ifabsent: int(1)
       reactant_atom_index:
         description: >-
-          Zero-based index of the atom position in the reactant
-          metabolite.
+          1-based position of the atom in the reactant metabolite,
+          matching FluxML, MTF, FreeFlux, INCA and the converter's
+          AtomAddress.
         slot_uri: fluxo:FLUXO_0000069
         range: integer
-        minimum_value: 0
+        minimum_value: 1
         required: true
       product_metabolite_id:
         description: >-
           Identifier of the product metabolite containing the destination
-          atom.
+          atom. Absent for a dangling atom that leaves the system.
         range: NetworkMetabolite
-        required: true
+      product_instance:
+        description: >-
+          Occurrence index (ReactionParticipant.instance) of the product
+          molecule the atom goes to. Defaults to 1.
+        range: integer
+        minimum_value: 1
+        ifabsent: int(1)
       product_atom_index:
         description: >-
-          Zero-based index of the atom position in the product metabolite.
+          1-based position of the atom in the product metabolite. Absent
+          for a dangling atom.
         slot_uri: fluxo:FLUXO_0000069
         range: integer
-        minimum_value: 0
-        required: true
+        minimum_value: 1
+      element:
+        description: >-
+          Chemical element of the tracked atom (e.g. "C", "N"). Needed to
+          keep "C#1@1" and "N#1@1" apart in multi-element FluxML v3
+          models; assumed to be the tracer element when absent.
+        slot_uri: fluxo:FLUXO_0000132
       annotation_type:
         description: The notation used for this atom transition.
         slot_uri: fluxo:FLUXO_0000072
@@ -269,17 +366,32 @@ classes:
   FluxConstraint:
     class_uri: fluxo:FLUXO_0000068
     description: >-
-      A constraint on metabolic flux values in the network model.
+      A constraint on metabolic flux values. Either names one reaction
+      with bounds or a fixed value, or carries a linear-combination
+      expression (FluxML <textual>, influx_si .cnstr) such as
+      "0.488*R67=bmAla" or "v2<=v1".
     attributes:
       id:
         description: Unique identifier for the constraint.
         identifier: true
         required: true
+      name:
+        description: Native name of the constraint, when the format has one.
       reaction_id:
         description: >-
-          Reference to the reaction this constraint applies to.
+          Reference to the single reaction this constraint applies to.
+          Absent for a linear-combination constraint, which carries an
+          expression instead.
         range: NetworkReaction
-        required: true
+      flux_type:
+        description: >-
+          Flux domain the constraint acts on: net or exchange (FluxML,
+          influx_si), or forward / backward (INCA bounds directional
+          fluxes). Net- and exchange-scoped constraints with identical
+          formula, operator and value are different constraints (three
+          such pairs exist in the EC benchmark's .cnstr). Defaults to net.
+        range: FluxTypeEnum
+        ifabsent: string(net)
       constraint_type:
         description: The type of constraint.
         range: ConstraintTypeEnum
@@ -295,25 +407,37 @@ classes:
         range: float
       expression:
         description: >-
-          Mathematical expression for linear combination constraints.
+          Full constraint expression as plain text, left-hand side,
+          operator and right-hand side (e.g. "0.488*R67=bmAla",
+          "v2<=v1"). A constraint the source wrote in MathML is kept
+          verbatim and is recognisable by its leading "<". May name
+          entities absent from the network, such as a free yield symbol.
         slot_uri: fluxo:FLUXO_0000223
+      is_auto_generated:
+        description: >-
+          Whether a tool generated this constraint as a default rather
+          than a person authoring it (influx_si .cnstr.def rows written
+          by txt2ftbl).
+        range: boolean
 
   PoolSizeConstraint:
-    class_uri: fluxo:FLUXO_0000068
     description: >-
-      A constraint on metabolite pool size values in the network model.
-      Parallel to FluxConstraint but applies to a metabolite rather than
-      a reaction.
+      A constraint on metabolite pool size values. Parallel to
+      FluxConstraint but applies to metabolites. Left unmapped:
+      FLUXO_0000068 is "linear flux constraint" and does not cover pool
+      sizes (ontology term request pending).
     attributes:
       id:
         description: Unique identifier for the constraint.
         identifier: true
         required: true
+      name:
+        description: Native name of the constraint, when the format has one.
       metabolite_id:
         description: >-
-          Reference to the metabolite this constraint applies to.
+          Reference to the single metabolite this constraint applies to.
+          Absent for a linear-combination constraint.
         range: NetworkMetabolite
-        required: true
       constraint_type:
         description: The type of constraint.
         range: ConstraintTypeEnum
@@ -329,5 +453,10 @@ classes:
         range: float
       expression:
         description: >-
-          Mathematical expression for linear combination constraints.
+          Full constraint expression as plain text (e.g.
+          "Suc - 2*Fum <= 0").
         slot_uri: fluxo:FLUXO_0000223
+      is_auto_generated:
+        description: >-
+          Whether a tool generated this constraint as a default.
+        range: boolean

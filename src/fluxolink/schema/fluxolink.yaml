@@ -38,10 +38,12 @@ classes:
       and simulation runs in a fluxomics dataset.
     attributes:
       id:
+        in_subset: [core]
         description: Unique identifier for this dataset.
         identifier: true
         required: true
       name:
+        in_subset: [core]
         description: Human-readable name of the dataset.
       description:
         description: Detailed description of the dataset contents.
@@ -58,15 +60,18 @@ classes:
           FLUXO ontology release version used for term mappings (e.g.,
           "2026-04-08"). Pins the ontology version for traceability.
       dataset_type:
+        in_subset: [core]
         description: >-
           Classification of this dataset by curation tier. When
-          "benchmark", the materialised network is required; when
-          "catalog" or absent, input content stays in the referenced
-          SourceFiles. Whether a benchmark also requires labeling
-          experiments depends on the method each run realises, which is
-          nested beyond the reach of a LinkML rule — see the rule below.
+          "benchmark", the materialised network is required (LinkML rule
+          below) and `fluxolink-validate` re-imposes the strict
+          field-level set — tracer fractions and purities, MID values and
+          SDs, software versions, and, for experimental data, the
+          cultivation condition. When "catalog" or absent, input content
+          stays in the referenced SourceFiles.
         range: DatasetTypeEnum
       source_files:
+        in_subset: [core]
         description: >-
           Native MFA files referenced by this dataset (FluxML, MTF,
           FTBL, .mat, etc.). Tier-1 provenance layer.
@@ -74,6 +79,7 @@ classes:
         multivalued: true
         inlined_as_list: true
       conditions:
+        in_subset: [core]
         description: >-
           All cultivation conditions in this dataset, defined once and
           referenced by LabelingExperiment.condition and
@@ -83,6 +89,7 @@ classes:
         multivalued: true
         inlined_as_list: true
       investigations:
+        in_subset: [core]
         description: All MFA investigations in this dataset.
         range: Investigation
         multivalued: true
@@ -93,11 +100,13 @@ classes:
         multivalued: true
         inlined_as_list: true
       experiments:
+        in_subset: [core]
         description: All labeling experiments in this dataset.
         range: LabelingExperiment
         multivalued: true
         inlined_as_list: true
       simulation_runs:
+        in_subset: [core]
         description: All simulation runs in this dataset.
         range: SimulationRun
         multivalued: true
@@ -120,8 +129,10 @@ classes:
           2026-08-24. The real rule is "isotope-based method implies a
           labeling experiment", and it cannot be written in LinkML:
           fluxomics_method lives on SimulationRun, nested, and
-          slot_conditions cannot nest. It is enforced by the Phase 7
-          `fluxo validate --benchmark` gate instead.
+          slot_conditions cannot nest. It is enforced by
+          `fluxolink-validate --benchmark` (src/fluxolink/validate.py)
+          instead, together with every other field-level benchmark
+          requirement.
         preconditions:
           slot_conditions:
             dataset_type:

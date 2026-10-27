@@ -1,0 +1,66 @@
+# The smallest useful FluxoLink record: one 13C-MFA study, filled with the
+# `core` subset only (docs/core_profile.md). ILLUSTRATIVE values: the study,
+# numbers and tool version are made up to show the shape, not taken from a
+# publication.
+#
+# Add `source_files` (with sha256 checksums) when you have the native input
+# and output files; add networks and measurements only for a benchmark.
+id: minimal_core_record
+name: Minimal core record (illustrative)
+dataset_type: catalog
+
+investigations:
+  - id: INV1
+    name: Glucose 13C-MFA of E. coli BW25113 (illustrative)
+    investigation_type: MFA
+
+conditions:
+  - id: COND1
+    organism_name: Escherichia coli
+    strain: BW25113
+    specific_growth_rate: 0.6
+    growth_rate_unit: 1/h
+
+experiments:
+  - id: EXP1
+    investigation_id: INV1
+    condition: COND1
+    data_origin: experimental
+    stationary: true
+    labeled_sources:
+      - id: GLC
+        metabolite_id: Gluc_ext
+        tracers:
+          - {labeling_pattern: "100000", tracer_fraction: 0.8, isotopic_purity: 0.99}
+          - {labeling_pattern: "111111", tracer_fraction: 0.2, isotopic_purity: 0.99}
+
+simulation_runs:
+  - id: RUN1
+    investigation_id: INV1
+    experiment_id: [EXP1]
+    fluxomics_method: IST_MFA
+    run_mode: [estimation, confidence_interval_estimation]
+    software: {id: SW1, software_name: INCA, version: "2.3"}
+    flux_solution:
+      id: SOL1
+      flux_results:
+        - reaction_id: PGI
+          flux_type: net
+          value: 61.2
+          lower_ci: 58.0
+          upper_ci: 64.1
+          confidence_level: 0.95
+          confidence_interval_method: parameter_continuation
+          flux_unit: mmol/gDW/h
+        - reaction_id: G6PDH
+          flux_type: net
+          value: 36.9
+          lower_ci: 34.2
+          upper_ci: 39.5
+          confidence_level: 0.95
+          confidence_interval_method: parameter_continuation
+          flux_unit: mmol/gDW/h
+    goodness_of_fit:
+      wssr: 42.1
+      degrees_of_freedom: 38
+      chi_square_p_value: 0.30

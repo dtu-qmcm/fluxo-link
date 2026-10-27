@@ -67,25 +67,68 @@ TOOLS: dict[str, dict[str, Any]] = {
 }
 
 
-def check_run(run: dict[str, Any], dataset: dict[str, Any]) -> list[str]:
+def _source_files(run: dict[str, Any], dataset: dict[str, Any]) -> list[dict[str, Any]]:
+    """Resolve the run's input_files ids against FluxoDataset.source_files."""
+    by_id = {f.get("id"): f for f in dataset.get("source_files") or []}
+    files = []
+    for ref in run.get("input_files") or []:
+        if isinstance(ref, dict):  # pre-2026-10 inlined form
+            files.append(ref)
+        elif ref in by_id:
+            files.append(by_id[ref])
+    return files
+
+
+def _roles(f: dict[str, Any]) -> set[str]:
+    role = f.get("role")
+    return set(role) if isinstance(role, list) else {role}
+
+
+def _prefix(run: dict[str, Any]) -> str | None:
+    """Return influx_si's --prefix from solver_options or the command line."""
+    for option in run.get("solver_options") or []:
+        if option.get("key") == "--prefix":
+            return option.get("value")
+    words = (run.get("command_line") or "").replace('"', " ").split()
+    if "--prefix" in words and words.index("--prefix") + 1 < len(words):
+        return words[words.index("--prefix") + 1]
+    return None
+
+
+def _experiments(run: dict[str, Any], dataset: dict[str, Any]) -> list[dict[str, Any]]:
+    wanted = set(run.get("experiment_id") or [])
+    return [e for e in dataset.get("experiments") or [] if e.get("id") in wanted]
+
+
+def check_run(run: dict[str, Any], dataset: dict[str, Any]) -> list[str] | None:
+    """Return what a consumer cannot determine, or None when no contract exists."""
     findings: list[str] = []
     sw = run.get("software", {}) or {}
     name = sw.get("software_name", "<unset>")
-    spec = TOOLS.get(name)
+    spec = TOOLS.get("13CFLUX2" if name == "13CFLUX3" else name)
 
     print(f"  run {run.get('id')}  ->  tool {name} {sw.get('version', '?')}")
     if spec is None:
-        findings.append(f"unknown tool {name!r}: no runnability contract to check")
-        print(f"    ! no runnability contract known for {name!r}")
-        return findings
+        print(f"    skip no runnability contract known for {name!r}")
+        return None
 
-    infiles = run.get("input_files") or []
-    roles = {f.get("role") for f in infiles}
-    paths = [f.get("path") for f in infiles]
+    infiles = _source_files(run, dataset)
+    roles = set().union(*(_roles(f) for f in infiles)) if infiles else set()
+    experiments = _experiments(run, dataset)
 
-    # 1. mandatory roles
-    for role in spec["needs_roles"]:
-        if role in roles:
+    # 1. mandatory roles. A run whose network (and, for isotope methods, its
+    # experiments) is materialised can have every input regenerated from the
+    # record with `fluxo export`, so it does not depend on native files.
+    materialised = bool(run.get("network_model_id")) and (
+        bool(experiments) or not run.get("experiment_id")
+    )
+    if materialised:
+        print("    ok   inputs regenerable from materialised content (fluxo export)")
+    for role in [] if materialised else spec["needs_roles"]:
+        alternatives = {role}
+        if role == "measurements":
+            alternatives |= {"mid_measurements"}
+        if roles & alternatives:
             print(f"    ok   mandatory role {role!r} present")
         else:
             print(f"    MISS mandatory role {role!r} absent")
@@ -93,116 +136,80 @@ def check_run(run: dict[str, Any], dataset: dict[str, Any]) -> list[str]:
 
     # 2. can the specific mandatory FILE be identified, not just the role?
     if name == "influx_si":
-        meas = [f for f in infiles if f.get("role") == "measurements"]
-        if len(meas) > 1:
-            exts = sorted({Path(f["path"]).suffix for f in meas})
-            print(
-                f"    AMBIG {len(meas)} files share role 'measurements' {exts};"
-                " the .miso cannot be identified from the record"
-            )
+        mids = [f for f in infiles if "mid_measurements" in _roles(f)]
+        generic = [f for f in infiles if "measurements" in _roles(f)]
+        if len(mids) == 1:
+            print(f"    ok   MID file is {mids[0]['path']!r}")
+        elif len(generic) > 1 and not mids:
+            print("    AMBIG several generic 'measurements' files; the .miso is not identified")
             findings.append(
-                "role 'measurements' is overloaded: .miso / .mflux / .mmet are"
-                " indistinguishable, so the mandatory MID file is not resolvable"
-                " without parsing filenames"
+                "several files carry the generic 'measurements' role, so the mandatory"
+                " MID file is not identified (use mid_measurements)"
             )
-        prefixes = {Path(p).name.split(".")[0] for p in paths}
-        if len(prefixes) == 1:
-            print(
-                f"    infer --prefix={prefixes.pop()!r} (recovered by string"
-                " surgery on paths; not declared anywhere)"
-            )
-            findings.append(
-                "the MTF --prefix is not a declared field; it only happens to be"
-                " recoverable because every path shares a stem"
-            )
+        prefix = _prefix(run)
+        if materialised:
+            pass  # `fluxo export --to mtf` chooses the prefix
+        elif prefix:
+            print(f"    ok   --prefix {prefix!r} is recorded")
         else:
-            print(f"    MISS cannot infer a single --prefix from {sorted(prefixes)}")
-            findings.append("cannot determine the MTF --prefix")
+            print("    MISS --prefix not recorded (command_line / solver_options)")
+            findings.append("the MTF --prefix is not recorded (command_line or solver_options)")
 
-    if name == "13CFLUX2":
-        same = {f.get("path") for f in infiles}
-        if len(same) == 1 and len(infiles) == 1:
-            role = infiles[0].get("role")
-            if role != "network":
-                print(
-                    f"    AMBIG the single input file is recorded as role={role!r},"
-                    " so the record does not assert that a network is present"
-                )
-                findings.append(
-                    "one .fml plays 5 roles but SourceFile.role is single-valued:"
-                    " the run's input_files cannot state that this file carries"
-                    " network + tracer + measurements at once"
-                )
-        cfgs = [f for f in (dataset.get("source_files") or []) if f.get("role") == "configuration"]
-        if cfgs and not (dataset.get("experiments") or []):
-            print(
-                "    MISS no experiment recorded, so the <configuration> to run"
-                " is not named and stationarity is unstated"
-            )
-            findings.append(
-                "the FluxML <configuration> to run is not identified (no"
-                " experiment, and no configuration-name slot exists)"
-            )
+    if name in {"13CFLUX2", "13CFLUX3"}:
+        fml = [f for f in infiles if f.get("format") == "FluxML"]
+        if fml and not {"network"} <= _roles(fml[0]):
+            findings.append("the .fml input does not declare role 'network'")
+        named = run.get("configuration_name") or next(
+            (e.get("configuration_name") for e in experiments if e.get("configuration_name")),
+            None,
+        )
+        if named:
+            print(f"    ok   configuration {named!r} is named")
+        else:
+            print("    MISS the FluxML <configuration> to run is not named")
+            findings.append("the FluxML <configuration> to run is not named (configuration_name)")
 
     if name == "freeflux":
-        if "tracer" not in roles:
-            print(
-                "    MISS no 'tracer' role: FreeFlux sets the labeling strategy"
-                " through set_labeling_strategy() in Python, so the tracer is"
-                " absent from the file set entirely -- this dataset CANNOT be run"
-            )
+        driver = [f for f in infiles if "driver_script" in _roles(f)]
+        tracer_in_record = any(e.get("labeled_sources") for e in experiments)
+        if driver:
+            print(f"    ok   driver script {driver[0]['path']!r} carries the API settings")
+        elif tracer_in_record:
+            print("    ok   tracer materialised in the experiment (no driver script recorded)")
+        else:
+            print("    MISS neither a driver script nor a materialised tracer is recorded")
             findings.append(
-                "FreeFlux file set has no tracer at all (API-only), and the"
-                " schema cannot distinguish 'tracer absent' from 'tracer not"
-                " recorded'"
+                "FreeFlux sets the tracer in code: record the driver script"
+                " (role driver_script) or materialise labeled_sources"
             )
-        print(
-            "    MISS the driver .py that supplies the tracer, bounds and solver"
-            " is not referenced; FileRoleEnum has no value for a driver script"
-        )
-        findings.append(
-            "no FileRoleEnum value for the FreeFlux driver script, which carries"
-            " the settings the TSVs omit"
-        )
 
     if name == "INCA":
-        fmts = {f.get("format") for f in infiles}
-        if fmts == {"other"}:
-            print(
-                "    note the .m script can only be typed as format='other';"
-                " InputFormatEnum's INCA_mat is the binary results container"
-            )
-            findings.append(
-                "InputFormatEnum has no value for an INCA .m script (INCA_mat is"
-                " the results format), so the input format is untyped"
-            )
-        print(
-            "    AMBIG the script is simultaneously the input AND the program;"
-            " nothing records that it calls simulate() rather than estimate()"
-        )
-        findings.append(
-            "INCA's run intent (simulate vs estimate vs continuate vs montecarlo)"
-            " is unrecoverable: it lives in the script body and has no slot"
-        )
+        scripts = [f for f in infiles if f.get("format") == "INCA_script"]
+        if not scripts:
+            findings.append("the INCA .m script is not recorded as format INCA_script")
 
     # 3. the invocation itself
-    print(f"    would run: {spec['invocation']}")
-    if run.get("optimization_method"):
-        print(
-            f"    note optimization_method={run['optimization_method']!r} is"
-            " recorded, but no format supplies it - see the FABRICATED comments"
-        )
-    for slot, why in [
-        ("command_line", "the actual invocation and its flags"),
-        ("run_mode", "whether this was a fit or a forward simulation only"),
-        ("solver_options", "solver flags such as --clownr / --zc / --noopt"),
-        ("integration_timespan", "the INST time grid"),
-    ]:
-        if slot not in run:
-            print(f"    MISS no {slot!r} slot: {why} is unrecoverable")
-            findings.append(f"no slot for {why}")
+    if run.get("command_line"):
+        print(f"    would run: {run['command_line']}")
+    else:
+        print(f"    would run: {spec['invocation']}")
+    if not run.get("run_mode") and run.get("run_status") != "planned":
+        print("    MISS run_mode not recorded: fit vs forward simulation is unknown")
+        findings.append("run_mode not recorded (fit vs forward simulation)")
+    if name in {"influx_si", "INCA", "freeflux"} and not (
+        run.get("command_line") or run.get("solver_options")
+    ):
+        print("    MISS neither command_line nor solver_options is recorded")
+        findings.append("invocation flags not recorded (command_line / solver_options)")
 
-    if run.get("fluxomics_method") in {"INST_MFA", "dynamic_MFA"} and "stop_time" not in run:
+    nonstationary = any(e.get("stationary") is False for e in experiments) or run.get(
+        "fluxomics_method"
+    ) in {"INST_MFA", "dynamic_MFA"}
+    has_grid = run.get("stop_time") is not None or run.get("integration_timespan")
+    has_grid = has_grid or any(
+        m.get("time_points") for e in experiments for m in e.get("mid_measurements") or []
+    )
+    if nonstationary and not has_grid:
         print("    MISS INST run with no stop_time and no time grid")
         findings.append("INST run without a stop time or integration grid")
 
@@ -210,7 +217,9 @@ def check_run(run: dict[str, Any], dataset: dict[str, Any]) -> list[str]:
 
 
 def main(argv: list[str]) -> int:
+    """Check every run in the given dataset files and print the findings."""
     total: list[tuple[str, str]] = []
+    skipped = 0
     for path in argv:
         data = yaml.safe_load(Path(path).read_text())
         runs = data.get("simulation_runs") or []
@@ -219,11 +228,15 @@ def main(argv: list[str]) -> int:
             print("  no simulation_runs: nothing to run, provenance only")
             continue
         for run in runs:
-            for f in check_run(run, data):
+            found = check_run(run, data)
+            if found is None:
+                skipped += 1
+                continue
+            for f in found:
                 total.append((Path(path).name, f))
 
     print("\n" + "=" * 72)
-    print(f"UNRESOLVABLE ITEMS: {len(total)}")
+    print(f"UNRESOLVABLE ITEMS: {len(total)}   (runs without a tool contract: {skipped})")
     for name, f in total:
         print(f"  [{name}] {f}")
     return 0

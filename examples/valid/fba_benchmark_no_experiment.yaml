@@ -9,6 +9,10 @@
 #
 # The network IS still required at this tier: a benchmark is benchmarked
 # against materialised input ground truth.
+#
+# ILLUSTRATIVE metadata: this network is a synthetic toy, so it has no organism,
+# strain or growth rate; the conditions carry only an id and a name. Software
+# versions and optimizer names are examples, not read from a recorded run.
 id: FBA_BENCH
 name: Constraint-based benchmark, no labeling experiment
 description: >-
@@ -19,10 +23,7 @@ schema_version: "0.1.0"
 
 conditions:
   - id: COND_FBA
-    organism_name: Escherichia coli
-    strain: K-12 MG1655
-    specific_growth_rate: 0.4
-    growth_rate_unit: 1/h
+    name: Toy FBA condition (synthetic; no organism)
 
 investigations:
   - id: INV_FBA

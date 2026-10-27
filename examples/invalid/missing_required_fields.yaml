@@ -1,35 +1,45 @@
 # INVALID FluxoDataset — used for negative validation tests.
-# Intentionally omits fields that Phase 3j marks required:
-#   - TracerIsotopomer.tracer_fraction
-#   - TracerIsotopomer.isotopic_purity
-#   - MIDDataPoint.standard_deviation
+# Intentionally omits five fields that the schema still marks required:
+#   - LabelingExperiment.stationary
+#   - TracerIsotopomer.labeling_pattern
+#   - MIDDataPoint.isotopologue_index
+#   - SoftwareInfo.software_name
+#   - FluxResult.value
 # `linkml-validate` MUST reject this file.
+#
+# (Until 2026-10 this file omitted tracer_fraction, isotopic_purity and
+# MIDDataPoint.standard_deviation. Those are now `recommended` in the schema
+# and required only at the benchmark tier by `fluxolink-validate --benchmark`,
+# so omitting them no longer fails linkml-validate.)
 id: BAD_DS
 name: Invalid dataset (missing required fields)
-conditions:
-  - id: COND_BAD
-    organism_name: Escherichia coli
-    strain: K-12
-    specific_growth_rate: 0.4
-    growth_rate_unit: 1/h
 
 experiments:
   - id: EXP_BAD
-    investigation_id: INV1
-    stationary: true
-    condition: COND_BAD
+    # MISSING: stationary (required)
     labeled_sources:
       - id: SRC_BAD
         metabolite_id: A
         tracers:
-          - labeling_pattern: "010"
-            # MISSING: tracer_fraction, isotopic_purity (both required)
+          - tracer_fraction: 1.0
+            # MISSING: labeling_pattern (required)
     mid_measurements:
       - id: M_BAD
         metabolite_id: F
-        atom_positions: "1,2,3"
-        analytical_method: GC_MS
         data_points:
-          - isotopologue_index: 0
-            value: 0.5
-            # MISSING: standard_deviation (required)
+          - value: 0.5
+            standard_deviation: 0.01
+            # MISSING: isotopologue_index (required)
+
+simulation_runs:
+  - id: RUN_BAD
+    software:
+      id: SW_BAD
+      # MISSING: software_name (required)
+      version: "1.0"
+    flux_solution:
+      id: SOL_BAD
+      flux_results:
+        - reaction_id: R1
+          flux_type: net
+          # MISSING: value (required)

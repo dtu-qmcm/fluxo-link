@@ -1,0 +1,123 @@
+id: https://w3id.org/fluxolink/flux_record
+name: fluxolink-flux-record
+title: FluxoLink Flat Flux Table
+description: >-
+  One row per simulation run, reaction and flux type: the denormalised view
+  a database indexes and most queries need ("all E. coli PGI fluxes from
+  [1-13C]glucose experiments, by tool"). Rows are generated from
+  FluxoDataset documents by `fluxolink-flatten`; the dataset stays the
+  record of truth, and this table is rebuilt from it. Not an exchange
+  format, and not imported by fluxolink.yaml.
+
+license: Apache-2.0
+
+prefixes:
+  linkml: https://w3id.org/linkml/
+  fluxo: http://purl.obolibrary.org/obo/
+
+default_prefix: fluxo
+default_range: string
+
+imports:
+  - linkml:types
+  - enumerations
+
+classes:
+  FluxRecordTable:
+    tree_root: true
+    description: A list of flux records, e.g. one dataset flattened.
+    attributes:
+      records:
+        description: The rows.
+        range: FluxRecord
+        multivalued: true
+        inlined_as_list: true
+
+  FluxRecord:
+    description: >-
+      One flux value with the context needed to compare it across studies
+      and tools. Multi-valued context (several experiments in a parallel
+      labeling run) is joined with "; ".
+    attributes:
+      dataset_id:
+        description: FluxoDataset.id the row comes from.
+        required: true
+      run_id:
+        description: SimulationRun.id.
+        required: true
+      reaction_id:
+        description: Reaction (or atom-transition variant) id.
+        required: true
+      flux_type:
+        description: Net, forward, backward or exchange.
+        range: FluxTypeEnum
+        required: true
+      value:
+        description: Flux value.
+        range: float
+        required: true
+      standard_deviation:
+        description: Standard deviation of value.
+        range: float
+      lower_ci:
+        description: Lower bound of the uncertainty interval.
+        range: float
+      upper_ci:
+        description: Upper bound of the uncertainty interval.
+        range: float
+      confidence_level:
+        description: Level of lower_ci / upper_ci (e.g. 0.95).
+        range: float
+      confidence_interval_method:
+        description: How the interval was computed.
+        range: ConfidenceIntervalMethodEnum
+      flux_unit:
+        description: Unit of value; compare rows only within one unit.
+      solution_role:
+        description: Estimated, reference (known truth) or simulated.
+        range: SolutionRoleEnum
+      fluxomics_method:
+        description: Method of the run (FLUXO:0000021 subtree).
+        range: FluxomicsMethodEnum
+      run_mode:
+        description: The run's modes, joined with "; ".
+      software_name:
+        description: >-
+          Tool name; the free-text name when the enum value is "other".
+      software_version:
+        description: Tool version.
+      investigation_id:
+        description: Investigation the run belongs to.
+      investigation_name:
+        description: Its name.
+      publication_doi:
+        description: DOI of the investigation's publication.
+      organism_name:
+        description: Organism of the run's condition(s).
+      strain:
+        description: Strain of the run's condition(s).
+      specific_growth_rate:
+        description: Growth rate, when exactly one condition applies.
+        range: float
+      growth_rate_unit:
+        description: Unit of specific_growth_rate.
+      data_origin:
+        description: Experimental, synthetic or simulated (joined if mixed).
+      stationary:
+        description: >-
+          Whether the run's experiments are isotopically stationary; empty
+          when they disagree or the run has no experiment.
+        range: boolean
+      tracer:
+        description: >-
+          Tracer design, e.g. "Gluc_ext: 100000 x 0.8, 111111 x 0.2", from
+          LabelingExperiment.tracer_summary when given.
+      wssr:
+        description: The run's weighted sum of squared residuals.
+        range: float
+      degrees_of_freedom:
+        description: Degrees of freedom of the run's fit.
+        range: integer
+      chi_square_p_value:
+        description: Upper-tail chi-square p-value of the run's fit.
+        range: float

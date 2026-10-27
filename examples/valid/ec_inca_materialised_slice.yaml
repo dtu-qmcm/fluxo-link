@@ -7,263 +7,270 @@
 # all of it would add bulk without adding findings. The slice keeps exactly the
 # constructs that stress the schema:
 #   v1   - a reversible reaction (`<->`)
-#   v51  - Pyr appears TWICE as a reactant  <- the sharpest defect in the corpus
+#   v51  - Pyr appears TWICE as a reactant (participant instances 1 and 2)
 #   v61  - the tracer uptake reaction, with an `.ext` boundary pool
 #   Suc / Fum  - metabolite-level symmetry declarations
 #   Glyc.ext   - a metabolite excluded from the mass balance
 #   AKG5       - an MS fragment declared with NO measured values
 # Everything marked LOST or FABRICATED applies to the full model equally.
+#
+# Tally after the 2026-10 schema revision: 0 FABRICATED (deleted: the Condition
+# block, the placeholder contributor, tracer purities, the analytical method,
+# the software version, and the optimizer EC.m never runs). LOST remaining (3):
+# the scalar default bounds, v1's forward/backward starting values, and the
+# mod2stoich re-projection. DERIVED (not stated by INCA, computed from it): the
+# metabolite list and atom counts, AKG5's isotopologue indices, the int_tspan
+# grid values.
 id: FLUXO_DS_ec_inca_slice
 name: E. coli INCA benchmark (representative slice)
 description: >-
   Three-reaction slice of the INCA EC.m benchmark, chosen to exercise the
   constructs the schema handles least well. Not a complete model.
 schema_version: "0.1.0"
-dataset_type: benchmark
+# Tier: catalog with materialised (Tier-2) content. This file records what
+# the source states, and the source is not benchmark-complete: a three-reaction slice, tracer purity unstated in EC.m, and AKG5 declared with no values.
+# `fluxolink-validate --benchmark` lists exactly what a benchmark would need.
+dataset_type: catalog
 fluxo_ontology_version: "2026-03-03"
 
 source_files:
+  # The script is the network, tracer, data, bounds, starting values, options
+  # and the invocation at once.
   - id: SF_ec_m
     path: EC.m
-    format: other
-    format_other: INCA MATLAB script (.m)
-    role: configuration
+    format: INCA_script
+    role: [driver_script, network, tracer, mid_measurements, flux_measurements, constraints, variable_specification, configuration]
     checksum: "sha256:d5bf12e7aeebe76276299a65942f64b4543766f050b195754b07d394c64f59d3"
     media_type: text/x-matlab
     file_size_bytes: 18906
 
-conditions:
-  - # FABRICATED (whole block): INCA scripts carry no organism, strain or
-    # growth rate. The model is E. coli by convention, not by declaration.
-    id: COND_unknown
-    organism_name: Escherichia coli
-    strain: unknown
-    specific_growth_rate: 0.0
-    growth_rate_unit: 1/h
-
 investigations:
   - id: INV_ec_inca
     name: E. coli INCA runtime benchmark
-    contributors:
-      - id: CONTRIB_unknown
-        name: Unknown
 
 networks:
   - id: NET_ec_slice
     name: E. coli (slice of EC.m)
-    # LOST: INCA never declares a metabolite list. Every entry below is DERIVED
-    # by parsing the reaction strings, and the atom counts come from the length
-    # of each parenthesised atom group. The ordering INCA uses internally (which
-    # governs m.states.val) is recoverable only from a comment block.
+    # DERIVED: INCA never declares a metabolite list. Every entry below is
+    # parsed out of the reaction strings, and the atom counts come from the
+    # length of each parenthesised atom group. (metabolites is only recommended,
+    # but the benchmark tier requires it.)
     metabolites:
-      # LOST for Gluc.ext / Glyc.ext: the `.ext` suffix marks a boundary pool.
-      # There is no is_external slot; is_pseudo is a different claim.
-      - id: Gluc.ext
-        n_tracked_atoms: 6
-      - id: G6P
-        n_tracked_atoms: 6
-      - id: F6P
-        n_tracked_atoms: 6
-      - id: Pyr
-        n_tracked_atoms: 3
-      - id: Glu
-        n_tracked_atoms: 5
-      - id: Val
-        n_tracked_atoms: 5
-      - id: CO2
-        n_tracked_atoms: 1
-      - id: AKG
-        n_tracked_atoms: 5
-      # LOST: m.mets{'Suc'}.sym = list('rotate180', atommap('1:4 2:3 3:2 4:1'))
-      # and the identical declaration on Fum. Metabolite-level symmetry has no
-      # slot anywhere. INCA states it ONCE per metabolite and it applies to every
-      # reaction the metabolite touches; the schema's only symmetry mechanism is
-      # AtomTransitionVariant on individual reactions, so the fact would have to
-      # be re-derived and duplicated onto each such reaction, with no single
-      # source of truth.
-      - id: Suc
-        n_tracked_atoms: 4
-      - id: Fum
-        n_tracked_atoms: 4
-      # LOST: m.states{'Glyc.ext'}.bal = false — excluded from the stoichiometric
-      # balance. No is_balanced slot.
-      - id: Glyc.ext
-        n_tracked_atoms: 3
+      # `.ext` is the modeller's naming convention for boundary pools.
+      - {id: Gluc.ext, n_tracked_atoms: 6, is_external: true}
+      - {id: G6P, n_tracked_atoms: 6}
+      - {id: F6P, n_tracked_atoms: 6}
+      - {id: Pyr, n_tracked_atoms: 3}
+      - {id: Glu, n_tracked_atoms: 5}
+      - {id: Val, n_tracked_atoms: 5}
+      - {id: CO2, n_tracked_atoms: 1}
+      - {id: AKG, n_tracked_atoms: 5}
+      # m.mets{'Suc'}.sym = list('rotate180', atommap('1:4 2:3 3:2 4:1')), and
+      # the same on Fum: declared once per metabolite, as INCA does.
+      - {id: Suc, n_tracked_atoms: 4, symmetry: "4,3,2,1"}
+      - {id: Fum, n_tracked_atoms: 4, symmetry: "4,3,2,1"}
+      # m.states{'Glyc.ext'}.bal = false.
+      - {id: Glyc.ext, n_tracked_atoms: 3, is_external: true, is_balanced: false}
+    # Reaction ids are the v1..v68 names of the script comments; INCA's data()
+    # call addresses the same reactions by ordinal (R1..R68), kept as aliases.
+    # pathway is the script's section comment.
     reactions:
       # v1: 'G6P (abcdef) <-> F6P (abcdef)'
       - id: v1
+        pathway: Glycolysis
         reversibility: true
-        # LOST: INCA's data() call addresses reactions by ORDINAL (R1..R68) while
-        # the script comments name them v1..v68. Both identifier spaces are real
-        # and a converter needs both, but `aliases` is single-valued (Phase 3t-2)
-        # so only one fits.
-        aliases: "INCA:R1"
-        reactants:
-          - metabolite_id: G6P
-        products:
-          - metabolite_id: F6P
+        aliases: ["INCA:R1"]
+        reactants: [{metabolite_id: G6P}]
+        products: [{metabolite_id: F6P}]
         atom_transition_variants:
           - variant_id: v1_v1
             transitions:
-              - {reactant_metabolite_id: G6P, reactant_atom_index: 0, product_metabolite_id: F6P, product_atom_index: 0}
               - {reactant_metabolite_id: G6P, reactant_atom_index: 1, product_metabolite_id: F6P, product_atom_index: 1}
               - {reactant_metabolite_id: G6P, reactant_atom_index: 2, product_metabolite_id: F6P, product_atom_index: 2}
               - {reactant_metabolite_id: G6P, reactant_atom_index: 3, product_metabolite_id: F6P, product_atom_index: 3}
               - {reactant_metabolite_id: G6P, reactant_atom_index: 4, product_metabolite_id: F6P, product_atom_index: 4}
               - {reactant_metabolite_id: G6P, reactant_atom_index: 5, product_metabolite_id: F6P, product_atom_index: 5}
+              - {reactant_metabolite_id: G6P, reactant_atom_index: 6, product_metabolite_id: F6P, product_atom_index: 6}
       # v51: 'Pyr (abc) + Pyr (def) + Glu (ghijk) -> Val (abcef) + CO2 (d) + AKG (ghijk)'
-      #
-      # ***** THE ENCODING IS NOT MERELY LOSSY HERE — IT IS CONTRADICTORY *****
-      # Pyr appears twice as a reactant. Molecule 1 contributes abc, molecule 2
-      # contributes def. Correct mapping:
+      # Pyr appears twice as a reactant: molecule 1 contributes abc, molecule 2
+      # contributes def. Each molecule is its own participant (instance 1, 2)
+      # and every transition names the molecule it comes from:
       #     Pyr#1 atom1 -> Val atom1      Pyr#2 atom1 -> CO2 atom1
       #     Pyr#1 atom2 -> Val atom2      Pyr#2 atom2 -> Val atom4
       #     Pyr#1 atom3 -> Val atom3      Pyr#2 atom3 -> Val atom5
-      # AtomTransition identifies its source only as (metabolite_id, atom_index),
-      # with no occurrence index, so Pyr#1 and Pyr#2 collapse into one "Pyr".
-      # The rows below therefore assert that Pyr atom 1 goes to BOTH Val atom 1
-      # AND CO2 atom 1 — physically impossible for one molecule. A consumer
-      # cannot recover the true mapping, and cannot even detect that the
-      # encoding is inconsistent.
+      # (Before reactant_instance existed, the two molecules collapsed into one
+      # "Pyr" and the encoding sent Pyr atom 1 to both Val and CO2.)
       - id: v51
+        pathway: Amino acid biosynthesis
         reversibility: false
-        aliases: "INCA:R51"
+        aliases: ["INCA:R51"]
         reactants:
-          - metabolite_id: Pyr
-          - metabolite_id: Pyr
-          - metabolite_id: Glu
+          - {metabolite_id: Pyr, instance: 1}
+          - {metabolite_id: Pyr, instance: 2}
+          - {metabolite_id: Glu}
         products:
-          - metabolite_id: Val
-          - metabolite_id: CO2
-          - metabolite_id: AKG
+          - {metabolite_id: Val}
+          - {metabolite_id: CO2}
+          - {metabolite_id: AKG}
         atom_transition_variants:
           - variant_id: v51_v1
             transitions:
               # from Pyr molecule 1 (atoms abc)
-              - {reactant_metabolite_id: Pyr, reactant_atom_index: 0, product_metabolite_id: Val, product_atom_index: 0}
-              - {reactant_metabolite_id: Pyr, reactant_atom_index: 1, product_metabolite_id: Val, product_atom_index: 1}
-              - {reactant_metabolite_id: Pyr, reactant_atom_index: 2, product_metabolite_id: Val, product_atom_index: 2}
-              # from Pyr molecule 2 (atoms def) — indistinguishable from the above
-              - {reactant_metabolite_id: Pyr, reactant_atom_index: 1, product_metabolite_id: Val, product_atom_index: 3}
-              - {reactant_metabolite_id: Pyr, reactant_atom_index: 2, product_metabolite_id: Val, product_atom_index: 4}
-              - {reactant_metabolite_id: Pyr, reactant_atom_index: 0, product_metabolite_id: CO2, product_atom_index: 0}
-              # from Glu
-              - {reactant_metabolite_id: Glu, reactant_atom_index: 0, product_metabolite_id: AKG, product_atom_index: 0}
+              - {reactant_metabolite_id: Pyr, reactant_instance: 1, reactant_atom_index: 1, product_metabolite_id: Val, product_atom_index: 1}
+              - {reactant_metabolite_id: Pyr, reactant_instance: 1, reactant_atom_index: 2, product_metabolite_id: Val, product_atom_index: 2}
+              - {reactant_metabolite_id: Pyr, reactant_instance: 1, reactant_atom_index: 3, product_metabolite_id: Val, product_atom_index: 3}
+              # from Pyr molecule 2 (atoms def)
+              - {reactant_metabolite_id: Pyr, reactant_instance: 2, reactant_atom_index: 1, product_metabolite_id: CO2, product_atom_index: 1}
+              - {reactant_metabolite_id: Pyr, reactant_instance: 2, reactant_atom_index: 2, product_metabolite_id: Val, product_atom_index: 4}
+              - {reactant_metabolite_id: Pyr, reactant_instance: 2, reactant_atom_index: 3, product_metabolite_id: Val, product_atom_index: 5}
+              # from Glu (ghijk -> AKG ghijk)
               - {reactant_metabolite_id: Glu, reactant_atom_index: 1, product_metabolite_id: AKG, product_atom_index: 1}
               - {reactant_metabolite_id: Glu, reactant_atom_index: 2, product_metabolite_id: AKG, product_atom_index: 2}
               - {reactant_metabolite_id: Glu, reactant_atom_index: 3, product_metabolite_id: AKG, product_atom_index: 3}
               - {reactant_metabolite_id: Glu, reactant_atom_index: 4, product_metabolite_id: AKG, product_atom_index: 4}
+              - {reactant_metabolite_id: Glu, reactant_atom_index: 5, product_metabolite_id: AKG, product_atom_index: 5}
       # v61: 'Gluc.ext (abcdef) -> G6P (abcdef)'  — the labelled uptake
       - id: v61
+        pathway: Transport
         reversibility: false
-        aliases: "INCA:R61"
+        aliases: ["INCA:R61"]
         reaction_type: exchange
-        reactants:
-          - metabolite_id: Gluc.ext
-        products:
-          - metabolite_id: G6P
+        reactants: [{metabolite_id: Gluc.ext}]
+        products: [{metabolite_id: G6P}]
         atom_transition_variants:
           - variant_id: v61_v1
             transitions:
-              - {reactant_metabolite_id: Gluc.ext, reactant_atom_index: 0, product_metabolite_id: G6P, product_atom_index: 0}
               - {reactant_metabolite_id: Gluc.ext, reactant_atom_index: 1, product_metabolite_id: G6P, product_atom_index: 1}
               - {reactant_metabolite_id: Gluc.ext, reactant_atom_index: 2, product_metabolite_id: G6P, product_atom_index: 2}
               - {reactant_metabolite_id: Gluc.ext, reactant_atom_index: 3, product_metabolite_id: G6P, product_atom_index: 3}
               - {reactant_metabolite_id: Gluc.ext, reactant_atom_index: 4, product_metabolite_id: G6P, product_atom_index: 4}
               - {reactant_metabolite_id: Gluc.ext, reactant_atom_index: 5, product_metabolite_id: G6P, product_atom_index: 5}
-    # LOST: m.rates.flx.lb = 1e-7 and m.rates.flx.ub = 1e7 are SCALARS that INCA
-    # broadcasts to all 92 flux variables. Expanding them per reaction (below)
-    # is the only option, but nothing records that these were a single global
-    # default rather than 68 individually-chosen bounds — a real difference when
-    # comparing how tightly two tools were constrained.
+              - {reactant_metabolite_id: Gluc.ext, reactant_atom_index: 6, product_metabolite_id: G6P, product_atom_index: 6}
+    # m.rates.flx.lb = 1e-7 and m.rates.flx.ub = 1e7 bound every DIRECTIONAL
+    # flux variable (INCA has one per direction: 92 for 68 reactions), so they
+    # are forward/backward bounds, not net bounds — a reversible reaction's net
+    # flux may be negative.
+    # LOST: they are SCALARS that INCA broadcasts to all 92 flux variables.
+    # Expanding them per reaction (below) is the only option, and nothing records
+    # that these were one global default rather than individually-chosen bounds.
     flux_constraints:
-      - {id: CNSTR_v1, reaction_id: v1, constraint_type: bound, lower_bound: 1.0e-7, upper_bound: 1.0e+7}
-      - {id: CNSTR_v51, reaction_id: v51, constraint_type: bound, lower_bound: 1.0e-7, upper_bound: 1.0e+7}
-      - {id: CNSTR_v61, reaction_id: v61, constraint_type: bound, lower_bound: 1.0e-7, upper_bound: 1.0e+7}
+      - {id: CNSTR_v1_fwd, reaction_id: v1, flux_type: forward, constraint_type: bound, lower_bound: 1.0e-7, upper_bound: 1.0e+7}
+      - {id: CNSTR_v1_bwd, reaction_id: v1, flux_type: backward, constraint_type: bound, lower_bound: 1.0e-7, upper_bound: 1.0e+7}
+      - {id: CNSTR_v51, reaction_id: v51, flux_type: forward, constraint_type: bound, lower_bound: 1.0e-7, upper_bound: 1.0e+7}
+      - {id: CNSTR_v61, reaction_id: v61, flux_type: forward, constraint_type: bound, lower_bound: 1.0e-7, upper_bound: 1.0e+7}
 
 experiments:
   - id: EXP_ec_inca
     name: EC INST experiment
     investigation_id: INV_ec_inca
+    network_model_id: NET_ec_slice
+    # Synthetic benchmark: the flux data are re-drawn with normrnd() at run
+    # time and the MS data are placeholders "replaced by simulated IDVs later".
+    # No cultivation, so no Condition.
+    data_origin: synthetic
     # From m.options.sim_ss = false.
     stationary: false
-    condition: COND_unknown
+    # m.options.sim_tunit = 'h'.
+    time_unit: h
+    source_files: [SF_ec_m]
     tracer_summary: 75% [1-13C] glucose + 25% [U-13C] glucose
     labeled_sources:
       # t = tracer({'1-13C_Gluc: Gluc.ext @ 1'; 'U-13C_Gluc: Gluc.ext @ 1 2 3 4 5 6'})
       # t.frac = [0.75, 0.25]
-      # Both tracers address the same pool, so one LabeledSource holds both.
+      # Both tracers address the same pool, so one LabeledSource holds both,
+      # each under its INCA name. Position lists (@ 1) are converted to binary
+      # patterns using the atom count derived from the reaction strings.
+      # tracer() supplies no purity, so isotopic_purity is absent.
       - id: SRC_Gluc_ext
         metabolite_id: Gluc.ext
         input_type: isotopomer
         tracers:
-          # LOST: the tracer NAMES '1-13C_Gluc' and 'U-13C_Gluc'.
-          # TracerIsotopomer has no id or name slot, so the labels INCA uses to
-          # refer to these tracers cannot be carried (Phase 3t-7).
-          # Position lists (@ 1) had to be converted to binary patterns, which
-          # requires the pool's atom count — available here only because it was
-          # derived from the reaction strings.
-          - labeling_pattern: "100000"
-            tracer_fraction: 0.75
-            # FABRICATED: INCA's tracer() supplies no purity.
-            isotopic_purity: 1.0
-          - labeling_pattern: "111111"
-            tracer_fraction: 0.25
-            isotopic_purity: 1.0
+          - {name: 1-13C_Gluc, labeling_pattern: "100000", tracer_fraction: 0.75}
+          - {name: U-13C_Gluc, labeling_pattern: "111111", tracer_fraction: 0.25}
     mid_measurements:
       # From d = msdata({... 'AKG5: AKG @ 1 2 3 4 5' ...}) followed by
-      # `d.idvs = idv` — INCA's DEFAULT, empty IDVs.
-      #
-      # The fragment is declared but carries NO measured values at all. Encoded
-      # honestly below as a measurement with an empty data_points list, which
-      # the schema permits. But note the consequence: this is indistinguishable
-      # from a fragment whose values simply were not extracted. There is no
-      # "declared but unmeasured" marker (Phase 3t-7 item 8), and no slot for
-      # the native fragment id 'AKG5'.
-      # FABRICATED: analytical_method — msdata() records none.
+      # `d.idvs = idv` — INCA's default, empty IDVs. The fragment is declared
+      # but carries NO measured values: a template. Its isotopologues M+0..M+5
+      # (DERIVED from the five atom positions) are listed with no value, which
+      # is how the schema marks "declared but unmeasured". msdata() records no
+      # analytical method.
       - id: AKG5
         metabolite_id: AKG
+        fragment_name: AKG5
+        measurement_spec: "AKG @ 1 2 3 4 5"
         atom_positions: "1,2,3,4,5"
-        analytical_method: other
-        analytical_method_other: not recorded by INCA
-        data_points: []
+        data_points:
+          - {isotopologue_index: 0}
+          - {isotopologue_index: 1}
+          - {isotopologue_index: 2}
+          - {isotopologue_index: 3}
+          - {isotopologue_index: 4}
+          - {isotopologue_index: 5}
     flux_measurements:
       # f = data('R61 ...'); f.val = [92.5864, ...]; f.std = f.val/20
-      # LOST: f.std is an ERROR MODEL (5% relative), not a value. Only the
-      # computed number survives; FluxMeasurement has no error_model slot,
-      # though MIDMeasurement does (Phase 3t-7 item 7).
-      # LOST: f.val = normrnd(f.val, f.std) re-randomises the values at runtime,
-      # so the literal in the file is NOT the value used. No synthetic-noise flag.
+      # The SD is computed from the literal (92.5864/20); the rule itself is
+      # kept as the error model. f.val = normrnd(f.val, f.std) then re-draws the
+      # value at run time, so the literal is the pre-noise value (hence
+      # data_origin: synthetic).
       - id: FM_R61
         reaction_id: v61
         flux_type: net
         value: 92.5864
         standard_deviation: 4.62932
+        error_model_expression: f.std = f.val/20
 
 simulation_runs:
   - id: RUN_ec_inca
     investigation_id: INV_ec_inca
     network_model_id: NET_ec_slice
-    experiment_id:
-      - EXP_ec_inca
+    experiment_id: [EXP_ec_inca]
     fluxomics_method: INST_MFA
+    # EC.m never calls estimate(): simulate(m) twice as a pre-evaluation, then
+    # 100 more times (REPS=100) in a timing loop. So no optimization_method.
+    run_mode: [forward_simulation]
+    # A prepared script; the corpus holds no output of it (the timings it
+    # prints were not kept).
+    run_status: planned
     software:
       id: SW_inca
       software_name: INCA
-      # FABRICATED: no INCA script records the toolbox version.
-      version: unknown
-    input_format: other
-    input_format_other: INCA MATLAB script (.m)
-    # FABRICATED AND CONTRADICTED BY THE SOURCE: EC.m never calls estimate().
-    # It calls simulate() nine times in a timing loop. optimization_method is
-    # required, so the document must assert an optimiser that was never run.
-    optimization_method: least_squares
+    input_format: INCA_script
+    # INCA's simulate() is EMU-based; EC.m sets no state-space option.
     isotopic_state_space: EMU
-    # LOST: the seven m.options settings (int_tspan's 9-point grid, sim_tunit
-    # 'h', fit_reinit, sim_sens, int_reltol 1e-10, int_timeout 10000) — only
-    # sim_ss survives, as experiments[].stationary. int_reltol is an INTEGRATOR
-    # tolerance and would be a category error in convergence_tolerance.
-    # LOST: mod2stoich(m)' re-projects the initial flux vector onto the feasible
-    # space, so the 92 literals in the file are not the values actually used.
-    # LOST: the wall-clock timings that are this script's only real output.
+    # m.options.int_tspan = 0:samp:(samp*nmts), samp = 8/60/60 h, nmts = 8:
+    # nine points, evaluated here (DERIVED) in the unit of sim_tunit.
+    integration_timespan: [0.0, 0.0022222222222222222, 0.0044444444444444444, 0.006666666666666666, 0.008888888888888889, 0.011111111111111112, 0.013333333333333332, 0.015555555555555555, 0.017777777777777778]
+    time_unit: h
+    # The m.options settings, verbatim. int_reltol is an INTEGRATOR tolerance,
+    # not an optimizer one.
+    solver_options:
+      - {key: int_reltol, value: "1e-10", description: ODE integrator tolerance}
+      - {key: fit_reinit, value: "true"}
+      - {key: sim_ss, value: "false"}
+      - {key: sim_sens, value: "false"}
+      - {key: int_timeout, value: "10000"}
+    input_files: [SF_ec_m]
+    # m.rates.flx.val and m.states.val (with m.states.lb = 1e-6, ub = 1, which
+    # are scalars broadcast to every pool, as for the flux bounds).
+    # Flux values: INCA's are directional; for the irreversible v51 and v61 the
+    # forward flux is the net flux.
+    # LOST: v1's starting values are a forward/backward pair (77.5311428582956 /
+    # 17.1878684051923); VariableKindEnum has net_flux and exchange_flux only,
+    # so they cannot be stored without converting them.
+    # LOST: `m.rates.flx.val = mod2stoich(m)'` re-projects the flux vector onto
+    # the feasible space, so the literals are NOT the values actually used.
+    variables:
+      - {variable_id: v51, variable_kind: net_flux, value: 0.363285642609455}
+      - {variable_id: v61, variable_kind: net_flux, value: 92.5878618171061}
+      - {variable_id: AKG, variable_kind: pool_size, value: 8.41e-5, lower_bound: 1.0e-6, upper_bound: 1.0}
+      - {variable_id: CO2, variable_kind: pool_size, value: 1.0e-5, lower_bound: 1.0e-6, upper_bound: 1.0}
+      - {variable_id: F6P, variable_kind: pool_size, value: 3.59e-4, lower_bound: 1.0e-6, upper_bound: 1.0}
+      - {variable_id: Fum, variable_kind: pool_size, value: 5.4e-5, lower_bound: 1.0e-6, upper_bound: 1.0}
+      - {variable_id: G6P, variable_kind: pool_size, value: 2.08e-3, lower_bound: 1.0e-6, upper_bound: 1.0}
+      - {variable_id: Glu, variable_kind: pool_size, value: 1.38e-2, lower_bound: 1.0e-6, upper_bound: 1.0}
+      - {variable_id: Gluc.ext, variable_kind: pool_size, value: 0.1, lower_bound: 1.0e-6, upper_bound: 1.0}
+      - {variable_id: Glyc.ext, variable_kind: pool_size, value: 0.1, lower_bound: 1.0e-6, upper_bound: 1.0}
+      - {variable_id: Pyr, variable_kind: pool_size, value: 1.60e-3, lower_bound: 1.0e-6, upper_bound: 1.0}
+      - {variable_id: Suc, variable_kind: pool_size, value: 5.47e-5, lower_bound: 1.0e-6, upper_bound: 1.0}
+      - {variable_id: Val, variable_kind: pool_size, value: 7.65e-4, lower_bound: 1.0e-6, upper_bound: 1.0}
     # No flux_solution: EC.m produces no fitted fluxes.
