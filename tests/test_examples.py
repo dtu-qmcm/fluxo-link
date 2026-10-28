@@ -7,6 +7,7 @@ via the `linkml-validate` CLI, which resolves schema imports relative to the
 schema file (the in-process validate() helper resolves them against CWD).
 """
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -19,11 +20,18 @@ SCHEMA = Path(__file__).parent.parent / "src" / "fluxolink" / "schema" / "fluxol
 EXAMPLES = Path(__file__).parent.parent / "examples"
 
 
+# linkml-validate reads data files with the locale encoding (cp1252 on
+# Windows); every FluxoLink file is UTF-8, so run it in Python's UTF-8 mode.
+UTF8_ENV = {**os.environ, "PYTHONUTF8": "1"}
+
+
 def _validate(data_file: Path) -> subprocess.CompletedProcess:
     return subprocess.run(
         [str(VALIDATE), "-s", str(SCHEMA), str(data_file)],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        env=UTF8_ENV,
     )
 
 
@@ -82,7 +90,7 @@ def test_catalog_tier_needs_no_materialised_inputs() -> None:
     import yaml
 
     catalog = EXAMPLES / "valid" / "simple_model_mtf_catalog.yaml"
-    doc = yaml.safe_load(catalog.read_text())
+    doc = yaml.safe_load(catalog.read_text(encoding="utf-8"))
     assert doc["dataset_type"] == "catalog"
     assert "networks" not in doc
     assert "experiments" not in doc
@@ -101,7 +109,7 @@ def test_stoichiometric_benchmark_needs_no_labeling_experiment() -> None:
     import yaml
 
     fixture = EXAMPLES / "valid" / "fba_benchmark_no_experiment.yaml"
-    doc = yaml.safe_load(fixture.read_text())
+    doc = yaml.safe_load(fixture.read_text(encoding="utf-8"))
     assert doc["dataset_type"] == "benchmark"
     assert "experiments" not in doc
     assert doc["simulation_runs"][0]["fluxomics_method"] == "constraint_based"
@@ -118,7 +126,8 @@ def test_conditions_are_referenced_not_inlined() -> None:
     """
     import yaml
 
-    doc = yaml.safe_load((EXAMPLES / "valid" / "simple_model_dataset.yaml").read_text())
+    fixture = EXAMPLES / "valid" / "simple_model_dataset.yaml"
+    doc = yaml.safe_load(fixture.read_text(encoding="utf-8"))
     declared = {c["id"] for c in doc["conditions"]}
     assert declared == {"COND1", "COND_FBA"}
     for experiment in doc["experiments"]:

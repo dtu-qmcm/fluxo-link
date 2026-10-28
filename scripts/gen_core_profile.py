@@ -46,7 +46,7 @@ def _classes() -> dict[str, dict[str, Any]]:
     for path in sorted(glob.glob(str(SCHEMA_DIR / "*.yaml"))):
         if Path(path).name == "flux_record.yaml":  # a derived view, not the dataset
             continue
-        doc = yaml.safe_load(Path(path).read_text())
+        doc = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
         classes.update(doc.get("classes") or {})
     return classes
 
@@ -121,7 +121,7 @@ def render() -> str:
         f"A complete core record (`{EXAMPLE.relative_to(REPO)}`, illustrative values):",
         "",
         "```yaml",
-        EXAMPLE.read_text().rstrip(),
+        EXAMPLE.read_text(encoding="utf-8").rstrip(),
         "```",
         "",
     ]
@@ -135,12 +135,12 @@ def main(argv: list[str]) -> int:
     args = parser.parse_args(argv)
     text = render()
     if args.check:
-        if not OUT.exists() or OUT.read_text() != text:
+        if not OUT.exists() or OUT.read_text(encoding="utf-8") != text:
             print(f"{OUT} is out of date; run scripts/gen_core_profile.py", file=sys.stderr)
             return 1
         return 0
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(text)
+    OUT.write_text(text, encoding="utf-8")
     print(f"wrote {OUT}")
     return 0
 

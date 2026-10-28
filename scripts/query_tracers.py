@@ -47,7 +47,7 @@ def atom_counts(doc: dict[str, Any]) -> dict[str, int | None]:
 
 def report(path: Path) -> list[str]:
     """Print Q1/Q2 answers for one dataset and return the caveats."""
-    doc = yaml.safe_load(path.read_text())
+    doc = yaml.safe_load(path.read_text(encoding="utf-8"))
     caveats: list[str] = []
     counts = atom_counts(doc)
     experiments = doc.get("experiments") or []

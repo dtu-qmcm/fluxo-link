@@ -221,7 +221,7 @@ def main(argv: list[str]) -> int:
     total: list[tuple[str, str]] = []
     skipped = 0
     for path in argv:
-        data = yaml.safe_load(Path(path).read_text())
+        data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
         runs = data.get("simulation_runs") or []
         print(f"\n=== {Path(path).name}  (dataset_type={data.get('dataset_type')}) ===")
         if not runs:

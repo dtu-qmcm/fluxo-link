@@ -55,6 +55,8 @@ uv run fluxolink-validate dataset.yaml --benchmark  # also the benchmark-tier re
 - the tier rules hold.
 
 It exits non-zero on errors and can be called from Python (`fluxolink.validate.validate_dataset`).
+FluxoLink files are UTF-8. `fluxolink-validate` reads them as such on every platform; on Windows,
+run the third-party `linkml-validate` with `PYTHONUTF8=1`.
 
 ## Linking tool formats
 

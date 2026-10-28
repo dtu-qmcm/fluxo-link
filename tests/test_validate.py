@@ -511,11 +511,11 @@ def test_cli_exit_codes(tmp_path: Path) -> None:
     import yaml
 
     good = tmp_path / "good.yaml"
-    good.write_text(yaml.safe_dump(_doc()))
+    good.write_text(yaml.safe_dump(_doc()), encoding="utf-8")
     assert main([str(good), "-q"]) == 0
     bad_doc = _doc()
     bad_doc["experiments"][0]["condition"] = "NOPE"
     bad = tmp_path / "bad.yaml"
-    bad.write_text(yaml.safe_dump(bad_doc))
+    bad.write_text(yaml.safe_dump(bad_doc), encoding="utf-8")
     assert main([str(bad), "-q"]) == 1
     assert main([str(bad), "--no-schema", "-q"]) == 1

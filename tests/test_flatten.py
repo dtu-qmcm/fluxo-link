@@ -1,6 +1,7 @@
 """Tests for the flat flux table (fluxolink-flatten) and the core profile page."""
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -15,7 +16,7 @@ FLUX_RECORD_SCHEMA = ROOT / "src" / "fluxolink" / "schema" / "flux_record.yaml"
 
 
 def _load(name: str) -> dict:
-    return yaml.safe_load((VALID / name).read_text())
+    return yaml.safe_load((VALID / name).read_text(encoding="utf-8"))
 
 
 def test_one_row_per_flux_result() -> None:
@@ -56,15 +57,18 @@ def test_other_software_uses_its_free_text_name() -> None:
 def test_rows_validate_against_the_flux_record_schema(tmp_path: Path) -> None:
     rows = []
     for path in sorted(VALID.glob("*.yaml")):
-        rows += flux_records(yaml.safe_load(path.read_text()))
+        rows += flux_records(yaml.safe_load(path.read_text(encoding="utf-8")))
     table = {"records": [{k: v for k, v in r.items() if v is not None} for r in rows]}
     out = tmp_path / "table.yaml"
-    out.write_text(yaml.safe_dump(table))
+    out.write_text(yaml.safe_dump(table), encoding="utf-8")
     validate = Path(sys.executable).parent / "linkml-validate"
     result = subprocess.run(
         [str(validate), "-s", str(FLUX_RECORD_SCHEMA), "-C", "FluxRecordTable", str(out)],
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        # linkml-validate reads files with the locale encoding; ours are UTF-8.
+        env={**os.environ, "PYTHONUTF8": "1"},
     )
     assert result.returncode == 0, result.stdout + result.stderr
 
@@ -73,12 +77,12 @@ def test_cli_writes_csv_and_jsonl(tmp_path: Path) -> None:
     source = str(VALID / "minimal_core_record.yaml")
     csv_out = tmp_path / "f.csv"
     assert main([source, "-o", str(csv_out)]) == 0
-    lines = csv_out.read_text().splitlines()
+    lines = csv_out.read_text(encoding="utf-8").splitlines()
     assert lines[0].split(",")[:3] == ["dataset_id", "run_id", "reaction_id"]
     assert len(lines) == 3
     jsonl = tmp_path / "f.jsonl"
     assert main([source, "-o", str(jsonl)]) == 0
-    first = json.loads(jsonl.read_text().splitlines()[0])
+    first = json.loads(jsonl.read_text(encoding="utf-8").splitlines()[0])
     assert first["reaction_id"] == "PGI"
 
 

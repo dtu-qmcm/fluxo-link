@@ -160,7 +160,7 @@ def flux_records(doc: dict[str, Any]) -> list[dict[str, Any]]:
 
 def _write(rows: list[dict[str, Any]], out: Path | None) -> None:
     suffix = out.suffix.lower() if out else ".tsv"
-    handle = open(out, "w", newline="") if out else sys.stdout  # noqa: SIM115
+    handle = open(out, "w", newline="", encoding="utf-8") if out else sys.stdout  # noqa: SIM115
     try:
         if suffix == ".jsonl":
             for row in rows:
@@ -201,7 +201,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
     rows: list[dict[str, Any]] = []
     for path in args.files:
-        with open(path) as handle:
+        with open(path, encoding="utf-8") as handle:
             rows += flux_records(yaml.safe_load(handle) or {})
     _write(rows, args.output)
     if args.output:

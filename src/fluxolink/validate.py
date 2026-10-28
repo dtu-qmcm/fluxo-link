@@ -881,7 +881,7 @@ def validate_file(
         All issues found. Semantic checks are skipped when the schema check
         fails, because they assume a structurally valid document.
     """
-    with open(path) as handle:
+    with open(path, encoding="utf-8") as handle:
         doc = yaml.safe_load(handle)
     if not isinstance(doc, dict):
         return [Issue(ERROR, "schema", "", "document is not a mapping")]

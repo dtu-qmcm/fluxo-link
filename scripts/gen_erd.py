@@ -198,7 +198,7 @@ def load() -> tuple[dict[str, Cls], dict[str, int], str]:
         if Path(path).name == "flux_record.yaml":  # a derived view, not the dataset
             continue
         mod = os.path.basename(path)[:-5]
-        doc = yaml.safe_load(Path(path).read_text()) or {}
+        doc = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
         if doc.get("version"):
             version = doc["version"]
         raw[mod] = doc
@@ -809,13 +809,13 @@ def main() -> int:
         f"content={quoteattr(model)}>\n{body}\n</svg>\n"
     )
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(svg)
+    args.out.write_text(svg, encoding="utf-8")
 
     # The native draw.io file: the same model, no SVG wrapper.
     drawio = args.out.with_suffix("") if args.out.name.endswith(".drawio.svg") else None
     if drawio is None:
         drawio = args.out.with_suffix(".drawio")
-    drawio.write_text(model + "\n")
+    drawio.write_text(model + "\n", encoding="utf-8")
 
     print(
         f"wrote {drawio}  (draw.io, {len(classes)} classes, {len(edges)} edges, "

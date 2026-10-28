@@ -11,7 +11,7 @@ SCHEMA_DIR = Path(__file__).parent.parent / "src" / "fluxolink" / "schema"
 def _load_yaml(filename: str) -> dict:
     """Load a YAML file from the schema directory."""
     path = SCHEMA_DIR / filename
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
