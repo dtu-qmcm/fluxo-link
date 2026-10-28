@@ -29,7 +29,7 @@ from pydantic import (
 )
 
 
-metamodel_version = "1.11.0"
+metamodel_version = "1.12.0"
 version = "0.1.0"
 
 
@@ -697,6 +697,7 @@ class Investigation(ConfiguredBaseModel):
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
                        'SourceFile',
+                       'EquivalenceCheck',
                        'Condition',
                        'SimulationRun',
                        'SoftwareInfo',
@@ -749,6 +750,7 @@ class Contributor(ConfiguredBaseModel):
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
                        'SourceFile',
+                       'EquivalenceCheck',
                        'Condition',
                        'SimulationRun',
                        'SoftwareInfo',
@@ -795,6 +797,7 @@ class MetabolicNetworkModel(ConfiguredBaseModel):
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
                        'SourceFile',
+                       'EquivalenceCheck',
                        'Condition',
                        'SimulationRun',
                        'SoftwareInfo',
@@ -852,6 +855,7 @@ class NetworkMetabolite(ConfiguredBaseModel):
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
                        'SourceFile',
+                       'EquivalenceCheck',
                        'Condition',
                        'SimulationRun',
                        'SoftwareInfo',
@@ -888,10 +892,10 @@ class NetworkMetabolite(ConfiguredBaseModel):
         pattern=re.compile(r"^[^:\s]+:\S+$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid aliases format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid aliases format: {v}"
             raise ValueError(err_msg)
         return v
@@ -920,6 +924,7 @@ class NetworkReaction(ConfiguredBaseModel):
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
                        'SourceFile',
+                       'EquivalenceCheck',
                        'Condition',
                        'SimulationRun',
                        'SoftwareInfo',
@@ -959,10 +964,10 @@ class NetworkReaction(ConfiguredBaseModel):
         pattern=re.compile(r"^[^:\s]+:\S+$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid aliases format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid aliases format: {v}"
             raise ValueError(err_msg)
         return v
@@ -1041,6 +1046,7 @@ class FluxConstraint(ConfiguredBaseModel):
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
                        'SourceFile',
+                       'EquivalenceCheck',
                        'Condition',
                        'SimulationRun',
                        'SoftwareInfo',
@@ -1059,7 +1065,7 @@ class FluxConstraint(ConfiguredBaseModel):
                        'Condition',
                        'FluxoDataset']} })
     reaction_id: Optional[str] = Field(default=None, description="""Reference to the single reaction this constraint applies to. Absent for a linear-combination constraint, which carries an expression instead.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FluxConstraint', 'FluxMeasurement', 'FluxResult']} })
-    flux_type: Optional[FluxTypeEnum] = Field(default=FluxTypeEnum.net, description="""Flux domain the constraint acts on: net or exchange (FluxML, influx_si), or forward / backward (INCA bounds directional fluxes). Net- and exchange-scoped constraints with identical formula, operator and value are different constraints (three such pairs exist in the EC benchmark's .cnstr). Defaults to net.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FluxConstraint', 'FluxMeasurement', 'FluxResult'],
+    flux_type: Optional[FluxTypeEnum] = Field(default=FluxTypeEnum("net"), description="""Flux domain the constraint acts on: net or exchange (FluxML, influx_si), or forward / backward (INCA bounds directional fluxes). Net- and exchange-scoped constraints with identical formula, operator and value are different constraints (three such pairs exist in the EC benchmark's .cnstr). Defaults to net.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FluxConstraint', 'FluxMeasurement', 'FluxResult'],
          'ifabsent': 'string(net)'} })
     constraint_type: ConstraintTypeEnum = Field(default=..., description="""The type of constraint.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FluxConstraint', 'PoolSizeConstraint']} })
     lower_bound: Optional[float] = Field(default=None, description="""Lower bound for the flux value.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FluxConstraint', 'PoolSizeConstraint', 'VariableSpecification']} })
@@ -1095,6 +1101,7 @@ class PoolSizeConstraint(ConfiguredBaseModel):
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
                        'SourceFile',
+                       'EquivalenceCheck',
                        'Condition',
                        'SimulationRun',
                        'SoftwareInfo',
@@ -1155,6 +1162,7 @@ class LabelingExperiment(ConfiguredBaseModel):
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
                        'SourceFile',
+                       'EquivalenceCheck',
                        'Condition',
                        'SimulationRun',
                        'SoftwareInfo',
@@ -1180,7 +1188,8 @@ class LabelingExperiment(ConfiguredBaseModel):
          'in_subset': ['core'],
          'recommended': True} })
     data_origin: Optional[DataOriginEnum] = Field(default=None, description="""Whether the measurement values are experimental, synthetic or simulated. Decides whether cultivation metadata can exist and whether natural-abundance handling applies.""", json_schema_extra = { "linkml_meta": {'domain_of': ['LabelingExperiment'], 'in_subset': ['core']} })
-    network_model_id: Optional[str] = Field(default=None, description="""Network the experiment's metabolite and reaction references resolve against. Needed for referential integrity in a dataset with more than one network.""", json_schema_extra = { "linkml_meta": {'domain_of': ['LabelingExperiment', 'SimulationRun'], 'recommended': True} })
+    network_model_id: Optional[str] = Field(default=None, description="""Network the experiment's metabolite and reaction references resolve against. Needed for referential integrity in a dataset with more than one network.""", json_schema_extra = { "linkml_meta": {'domain_of': ['LabelingExperiment', 'EquivalenceCheck', 'SimulationRun'],
+         'recommended': True} })
     configuration_name: Optional[str] = Field(default=None, description="""Native name of this experiment's configuration (FluxML <configuration>@name, unique within one .fml; INCA experiment id). One FluxML file with several configurations (EC.fml: a_INST, b_INST, a_STAT, b_STAT) becomes one LabelingExperiment per configuration, sharing one network.""", json_schema_extra = { "linkml_meta": {'domain_of': ['LabelingExperiment', 'SimulationRun']} })
     comment: Optional[str] = Field(default=None, description="""Free-text comment (FluxML <configuration><comment>).""", json_schema_extra = { "linkml_meta": {'domain_of': ['LabelingExperiment',
                        'MIDMeasurement',
@@ -1232,6 +1241,7 @@ class LabeledSource(ConfiguredBaseModel):
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
                        'SourceFile',
+                       'EquivalenceCheck',
                        'Condition',
                        'SimulationRun',
                        'SoftwareInfo',
@@ -1300,10 +1310,10 @@ class TracerIsotopomer(ConfiguredBaseModel):
         pattern=re.compile(r"^[01xX]+$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid labeling_pattern format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid labeling_pattern format: {v}"
             raise ValueError(err_msg)
         return v
@@ -1332,6 +1342,7 @@ class MIDMeasurement(ConfiguredBaseModel):
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
                        'SourceFile',
+                       'EquivalenceCheck',
                        'Condition',
                        'SimulationRun',
                        'SoftwareInfo',
@@ -1437,6 +1448,7 @@ class FluxMeasurement(ConfiguredBaseModel):
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
                        'SourceFile',
+                       'EquivalenceCheck',
                        'Condition',
                        'SimulationRun',
                        'SoftwareInfo',
@@ -1518,6 +1530,7 @@ class PoolSizeMeasurement(ConfiguredBaseModel):
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
                        'SourceFile',
+                       'EquivalenceCheck',
                        'Condition',
                        'SimulationRun',
                        'SoftwareInfo',
@@ -1605,6 +1618,7 @@ class NMRIsotopomerMeasurement(ConfiguredBaseModel):
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
                        'SourceFile',
+                       'EquivalenceCheck',
                        'Condition',
                        'SimulationRun',
                        'SoftwareInfo',
@@ -1696,6 +1710,7 @@ class FluxRatioMeasurement(ConfiguredBaseModel):
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
                        'SourceFile',
+                       'EquivalenceCheck',
                        'Condition',
                        'SimulationRun',
                        'SoftwareInfo',
@@ -1760,6 +1775,7 @@ class PoolSizeRatioMeasurement(ConfiguredBaseModel):
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
                        'SourceFile',
+                       'EquivalenceCheck',
                        'Condition',
                        'SimulationRun',
                        'SoftwareInfo',
@@ -1825,6 +1841,7 @@ class SourceFile(ConfiguredBaseModel):
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
                        'SourceFile',
+                       'EquivalenceCheck',
                        'Condition',
                        'SimulationRun',
                        'SoftwareInfo',
@@ -1853,19 +1870,60 @@ class SourceFile(ConfiguredBaseModel):
     generated_by: Optional[str] = Field(default=None, description="""Tool that generated the file, when it was not authored by hand (e.g. \"txt2ftbl\" for influx_si .def files, \"fluxomics_data_converter\").""", json_schema_extra = { "linkml_meta": {'domain_of': ['SourceFile']} })
     generator_version: Optional[str] = Field(default=None, description="""Version of the generating tool.""", json_schema_extra = { "linkml_meta": {'domain_of': ['SourceFile']} })
     generation_date: Optional[str] = Field(default=None, description="""When the file was generated.""", json_schema_extra = { "linkml_meta": {'domain_of': ['SourceFile']} })
+    derived_from: Optional[list[str]] = Field(default=None, description="""Source file(s) this file was generated from, by id into FluxoDataset.source_files (e.g. a converter-written EC.netw derived from EC.fml; a FluxML file derived from a whole MTF set). Absent for hand-written files. Whether the generated file encodes the same problem is recorded in FluxoDataset.equivalence_checks.""", json_schema_extra = { "linkml_meta": {'domain_of': ['SourceFile'], 'slot_uri': 'prov:wasDerivedFrom'} })
 
     @field_validator('checksum')
     def pattern_checksum(cls, v):
         pattern=re.compile(r"^[a-z0-9]+:[0-9a-f]+$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid checksum format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid checksum format: {v}"
             raise ValueError(err_msg)
         return v
+
+
+class EquivalenceCheck(ConfiguredBaseModel):
+    """
+    The result of re-parsing a set of native files and comparing it with what it should encode: the dataset's own network and labeling experiments, or other source files. One check per encoding, e.g. one for the seven files of a generated MTF set. FLUXO has no term for this yet.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/fluxolink/experiment'})
+
+    id: str = Field(default=..., description="""Unique identifier for the check.""", json_schema_extra = { "linkml_meta": {'domain_of': ['Investigation',
+                       'Contributor',
+                       'MetabolicNetworkModel',
+                       'NetworkMetabolite',
+                       'NetworkReaction',
+                       'FluxConstraint',
+                       'PoolSizeConstraint',
+                       'LabelingExperiment',
+                       'LabeledSource',
+                       'MIDMeasurement',
+                       'FluxMeasurement',
+                       'PoolSizeMeasurement',
+                       'NMRIsotopomerMeasurement',
+                       'FluxRatioMeasurement',
+                       'PoolSizeRatioMeasurement',
+                       'SourceFile',
+                       'EquivalenceCheck',
+                       'Condition',
+                       'SimulationRun',
+                       'SoftwareInfo',
+                       'FluxSolution',
+                       'FluxoDataset']} })
+    files: list[str] = Field(default=..., description="""The files that were re-parsed and checked, as one encoding (by id into FluxoDataset.source_files).""", min_length=1, json_schema_extra = { "linkml_meta": {'domain_of': ['EquivalenceCheck']} })
+    compared_with: Optional[list[str]] = Field(default=None, description="""Files the encoding was compared with. Absent means the dataset's own Tier-2 content (network_model_id / experiment_id below).""", json_schema_extra = { "linkml_meta": {'domain_of': ['EquivalenceCheck']} })
+    network_model_id: Optional[str] = Field(default=None, description="""Network compared against when compared_with is absent (needed when the dataset has several networks).""", json_schema_extra = { "linkml_meta": {'domain_of': ['LabelingExperiment', 'EquivalenceCheck', 'SimulationRun']} })
+    experiment_id: Optional[list[str]] = Field(default=None, description="""Experiments (configurations) compared against when compared_with is absent, e.g. the one configuration an MTF set holds.""", json_schema_extra = { "linkml_meta": {'domain_of': ['EquivalenceCheck', 'SimulationRun']} })
+    equivalent: bool = Field(default=..., description="""True when the comparison found no difference beyond the expected ones.""", json_schema_extra = { "linkml_meta": {'domain_of': ['EquivalenceCheck']} })
+    differences: Optional[list[str]] = Field(default=None, description="""One line per unexpected difference, \"[kind] key: detail\" (e.g. \"[atom_transition] SDH: 1 variant mapping(s) only in a\"). Must be empty when equivalent is true.""", json_schema_extra = { "linkml_meta": {'domain_of': ['EquivalenceCheck']} })
+    expected_differences: Optional[list[str]] = Field(default=None, description="""Differences the generator introduces by design (e.g. \"[reaction] A_out: drain added for terminal pool A\").""", json_schema_extra = { "linkml_meta": {'domain_of': ['EquivalenceCheck']} })
+    checked_by: Optional[str] = Field(default=None, description="""Tool that ran the check (e.g. \"fluxomics_data_converter\").""", json_schema_extra = { "linkml_meta": {'domain_of': ['EquivalenceCheck']} })
+    checker_version: Optional[str] = Field(default=None, description="""Version of that tool.""", json_schema_extra = { "linkml_meta": {'domain_of': ['EquivalenceCheck']} })
+    check_date: Optional[str] = Field(default=None, description="""When the check was run.""", json_schema_extra = { "linkml_meta": {'domain_of': ['EquivalenceCheck']} })
 
 
 class Condition(ConfiguredBaseModel):
@@ -1891,6 +1949,7 @@ class Condition(ConfiguredBaseModel):
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
                        'SourceFile',
+                       'EquivalenceCheck',
                        'Condition',
                        'SimulationRun',
                        'SoftwareInfo',
@@ -1950,6 +2009,7 @@ class SimulationRun(ConfiguredBaseModel):
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
                        'SourceFile',
+                       'EquivalenceCheck',
                        'Condition',
                        'SimulationRun',
                        'SoftwareInfo',
@@ -1959,8 +2019,9 @@ class SimulationRun(ConfiguredBaseModel):
     investigation_id: Optional[str] = Field(default=None, description="""Reference to the parent investigation. Recommended; required at the benchmark tier.""", json_schema_extra = { "linkml_meta": {'domain_of': ['LabelingExperiment', 'SimulationRun'],
          'in_subset': ['core'],
          'recommended': True} })
-    network_model_id: Optional[str] = Field(default=None, description="""Reference to the metabolic network model used. Recommended rather than required: a catalog-tier dataset references its network as a SourceFile instead of materialising it, and a hard requirement here would force such datasets to fabricate a stub MetabolicNetworkModel. Benchmark-tier datasets must carry a network — enforced by the FluxoDataset tier rule.""", json_schema_extra = { "linkml_meta": {'domain_of': ['LabelingExperiment', 'SimulationRun'], 'recommended': True} })
-    experiment_id: Optional[list[str]] = Field(default=None, description="""Reference(s) to the labeling experiment(s) used. Singular for single-labeling-experiment MFA; multivalued (2+) for parallel labeling experiments (PLE) jointly fit to one shared flux solution. Optional for non-isotope methods (e.g., FBA).""", json_schema_extra = { "linkml_meta": {'domain_of': ['SimulationRun'], 'in_subset': ['core']} })
+    network_model_id: Optional[str] = Field(default=None, description="""Reference to the metabolic network model used. Recommended rather than required: a catalog-tier dataset references its network as a SourceFile instead of materialising it, and a hard requirement here would force such datasets to fabricate a stub MetabolicNetworkModel. Benchmark-tier datasets must carry a network — enforced by the FluxoDataset tier rule.""", json_schema_extra = { "linkml_meta": {'domain_of': ['LabelingExperiment', 'EquivalenceCheck', 'SimulationRun'],
+         'recommended': True} })
+    experiment_id: Optional[list[str]] = Field(default=None, description="""Reference(s) to the labeling experiment(s) used. Singular for single-labeling-experiment MFA; multivalued (2+) for parallel labeling experiments (PLE) jointly fit to one shared flux solution. Optional for non-isotope methods (e.g., FBA).""", json_schema_extra = { "linkml_meta": {'domain_of': ['EquivalenceCheck', 'SimulationRun'], 'in_subset': ['core']} })
     configuration_name: Optional[str] = Field(default=None, description="""Name of the configuration inside the input file that this run executes (FluxML <configuration>@name). Lets a catalog-tier record say which of several configurations was run without materialising the experiment.""", json_schema_extra = { "linkml_meta": {'domain_of': ['LabelingExperiment', 'SimulationRun']} })
     fluxomics_method: Optional[FluxomicsMethodEnum] = Field(default=None, description="""The fluxomics method this run realises — a value from the FLUXO:0000021 subtree. IST_MFA requires stationary experiments and INST_MFA non-stationary ones (checked by `fluxolink-validate`). Recommended; required at the benchmark tier.""", json_schema_extra = { "linkml_meta": {'domain_of': ['SimulationRun'], 'in_subset': ['core'], 'recommended': True} })
     run_mode: Optional[list[RunModeEnum]] = Field(default=None, description="""What the run did: estimation, forward simulation, confidence intervals, Monte Carlo, ... Multivalued because one run can do several (INCA estimate then continuate). An influx_si --noopt run and every INCA benchmark script are forward simulations.""", json_schema_extra = { "linkml_meta": {'domain_of': ['SimulationRun'], 'in_subset': ['core']} })
@@ -2022,6 +2083,7 @@ class SoftwareInfo(ConfiguredBaseModel):
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
                        'SourceFile',
+                       'EquivalenceCheck',
                        'Condition',
                        'SimulationRun',
                        'SoftwareInfo',
@@ -2122,6 +2184,7 @@ class FluxSolution(ConfiguredBaseModel):
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
                        'SourceFile',
+                       'EquivalenceCheck',
                        'Condition',
                        'SimulationRun',
                        'SoftwareInfo',
@@ -2459,6 +2522,7 @@ class FluxoDataset(ConfiguredBaseModel):
                        'FluxRatioMeasurement',
                        'PoolSizeRatioMeasurement',
                        'SourceFile',
+                       'EquivalenceCheck',
                        'Condition',
                        'SimulationRun',
                        'SoftwareInfo',
@@ -2494,6 +2558,7 @@ class FluxoDataset(ConfiguredBaseModel):
     networks: Optional[list[MetabolicNetworkModel]] = Field(default=None, description="""All metabolic network models in this dataset.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FluxoDataset']} })
     experiments: Optional[list[LabelingExperiment]] = Field(default=None, description="""All labeling experiments in this dataset.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FluxoDataset'], 'in_subset': ['core']} })
     simulation_runs: Optional[list[SimulationRun]] = Field(default=None, description="""All simulation runs in this dataset.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FluxoDataset'], 'in_subset': ['core']} })
+    equivalence_checks: Optional[list[EquivalenceCheck]] = Field(default=None, description="""Results of re-parsing generated (or foreign) native files and comparing them with the content they should encode. This is how a dataset links tool formats: each tool's input files are recorded once, with what they were derived from and whether they still encode the same problem.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FluxoDataset']} })
 
 
 # Model rebuild
@@ -2520,6 +2585,7 @@ NMRIsotopomerDataPoint.model_rebuild()
 FluxRatioMeasurement.model_rebuild()
 PoolSizeRatioMeasurement.model_rebuild()
 SourceFile.model_rebuild()
+EquivalenceCheck.model_rebuild()
 Condition.model_rebuild()
 SimulationRun.model_rebuild()
 SoftwareInfo.model_rebuild()

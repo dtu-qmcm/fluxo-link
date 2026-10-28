@@ -10,6 +10,7 @@ license: Apache-2.0
 prefixes:
   linkml: https://w3id.org/linkml/
   fluxo: http://purl.obolibrary.org/obo/
+  prov: http://www.w3.org/ns/prov#
 
 default_prefix: fluxo
 default_range: string
@@ -681,6 +682,79 @@ classes:
         description: Version of the generating tool.
       generation_date:
         description: When the file was generated.
+        range: IsoDateTime
+      derived_from:
+        description: >-
+          Source file(s) this file was generated from, by id into
+          FluxoDataset.source_files (e.g. a converter-written EC.netw
+          derived from EC.fml; a FluxML file derived from a whole MTF
+          set). Absent for hand-written files. Whether the generated file
+          encodes the same problem is recorded in
+          FluxoDataset.equivalence_checks.
+        slot_uri: prov:wasDerivedFrom
+        range: SourceFile
+        multivalued: true
+
+  EquivalenceCheck:
+    description: >-
+      The result of re-parsing a set of native files and comparing it with
+      what it should encode: the dataset's own network and labeling
+      experiments, or other source files. One check per encoding, e.g. one
+      for the seven files of a generated MTF set. FLUXO has no term for
+      this yet.
+    attributes:
+      id:
+        description: Unique identifier for the check.
+        identifier: true
+        required: true
+      files:
+        description: >-
+          The files that were re-parsed and checked, as one encoding (by id
+          into FluxoDataset.source_files).
+        range: SourceFile
+        multivalued: true
+        required: true
+        minimum_cardinality: 1
+      compared_with:
+        description: >-
+          Files the encoding was compared with. Absent means the dataset's
+          own Tier-2 content (network_model_id / experiment_id below).
+        range: SourceFile
+        multivalued: true
+      network_model_id:
+        description: >-
+          Network compared against when compared_with is absent (needed when
+          the dataset has several networks).
+        range: MetabolicNetworkModel
+      experiment_id:
+        description: >-
+          Experiments (configurations) compared against when compared_with
+          is absent, e.g. the one configuration an MTF set holds.
+        range: LabelingExperiment
+        multivalued: true
+      equivalent:
+        description: >-
+          True when the comparison found no difference beyond the expected
+          ones.
+        range: boolean
+        required: true
+      differences:
+        description: >-
+          One line per unexpected difference, "[kind] key: detail" (e.g.
+          "[atom_transition] SDH: 1 variant mapping(s) only in a"). Must be
+          empty when equivalent is true.
+        multivalued: true
+      expected_differences:
+        description: >-
+          Differences the generator introduces by design (e.g. "[reaction]
+          A_out: drain added for terminal pool A").
+        multivalued: true
+      checked_by:
+        description: Tool that ran the check (e.g. "fluxomics_data_converter").
+      checker_version:
+        description: Version of that tool.
+      check_date:
+        description: When the check was run.
         range: IsoDateTime
 
   Condition:

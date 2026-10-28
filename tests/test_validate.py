@@ -447,6 +447,49 @@ def test_all_zero_mid_group_is_flagged_as_placeholder() -> None:
     assert "mid-placeholder" in _rules(validate_dataset(doc), WARNING)
 
 
+def _with_generated_inputs(doc: dict) -> dict:
+    doc["source_files"] = [
+        {"id": "SRC", "path": "model.fml", "format": "FluxML", "role": ["network"]},
+        {
+            "id": "GEN",
+            "path": "runs/model.netw",
+            "format": "MTF",
+            "role": ["network"],
+            "generated_by": "fluxomics_data_converter",
+            "derived_from": ["SRC"],
+        },
+    ]
+    doc["equivalence_checks"] = [
+        {
+            "id": "CHK",
+            "files": ["GEN"],
+            "network_model_id": "NET",
+            "experiment_id": ["EXP"],
+            "equivalent": True,
+            "expected_differences": ["[reaction] A_out: drain added for terminal pool A"],
+        }
+    ]
+    return doc
+
+
+def test_equivalence_check_is_valid_and_consistent() -> None:
+    doc = _with_generated_inputs(_doc())
+    assert schema_issues(doc) == []
+    assert validate_dataset(doc) == []
+    doc["equivalence_checks"][0]["differences"] = ["[tracer] GLC: purity 0.99 vs none"]
+    assert "equivalence-consistency" in _rules(validate_dataset(doc))
+    doc["equivalence_checks"][0]["equivalent"] = False
+    assert "equivalence-consistency" not in _rules(validate_dataset(doc))
+
+
+def test_derived_from_must_resolve() -> None:
+    doc = _with_generated_inputs(_doc())
+    doc["source_files"][1]["derived_from"] = ["NOPE"]
+    assert "reference-integrity" in _rules(validate_dataset(doc))
+    doc["source_files"][1]["derived_from"] = ["GEN"]
+    assert "reference-integrity" in _rules(validate_dataset(doc))
+
+
 def test_parse_positions() -> None:
     assert parse_positions("1-3,5") == [1, 2, 3, 5]
     assert parse_positions("2,3") == [2, 3]

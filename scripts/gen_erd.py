@@ -64,7 +64,14 @@ COLUMNS: list[tuple[str, list[str]]] = [
     ("investigation", ["Investigation", "Contributor"]),
     (
         "experiment",
-        ["LabelingExperiment", "Condition", "LabeledSource", "TracerIsotopomer", "SourceFile"],
+        [
+            "LabelingExperiment",
+            "Condition",
+            "LabeledSource",
+            "TracerIsotopomer",
+            "SourceFile",
+            "EquivalenceCheck",
+        ],
     ),
     (
         "experiment",

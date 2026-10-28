@@ -9,7 +9,7 @@ FluxoLink provides a structured, ontology-compliant schema for curating experime
 ## Architecture
 
 ```
-FLUXO Ontology (semantics) → LinkML Schema (structure) → fluxomics_data_converter (translation) → fluxomics softwares (computation)
+FLUXO Ontology (semantics) → LinkML Schema (structure) → fluxomics_data_converter (translation) → fluxomics software (computation)
 ```
 
 The LinkML schema serves as the interface layer between the ontology (what concepts mean) and the computation library (what data does).
@@ -55,6 +55,15 @@ uv run fluxolink-validate dataset.yaml --benchmark  # also the benchmark-tier re
 - the tier rules hold.
 
 It exits non-zero on errors and can be called from Python (`fluxolink.validate.validate_dataset`).
+
+## Linking tool formats
+
+A dataset records each tool's native input files once, as `source_files`. A file generated
+from another one says so in `derived_from`. `equivalence_checks` record the result of
+re-parsing an encoding and comparing it with the dataset's network and experiments, or with
+other files. It lists the unexpected differences and the ones the generator introduces by
+design, so you can see whether the MTF, FreeFlux and FluxML inputs given to different tools
+still describe the same problem. The converter's `fluxo convert` writes these records.
 
 ## Core profile and database table
 

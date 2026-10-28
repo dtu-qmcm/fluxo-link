@@ -78,6 +78,40 @@ Project change log. Updated by the AI agent as changes are made.
 
 ---
 
+## Linking Tool Formats: `derived_from` + `EquivalenceCheck` (2026-10-27)
+
+`added` `schema` `validation` — requested by the converter session for `fluxo convert --link`
+
+FluxoLink links tool formats rather than being one more format. A dataset now
+records, for every converter-generated tool input, what it was generated from
+and whether it still encodes the same problem.
+
+- **`SourceFile.derived_from`:** multivalued reference into `source_files`,
+  `slot_uri: prov:wasDerivedFrom`. Multivalued because a FluxML file can be
+  derived from a whole MTF set.
+- **New `EquivalenceCheck` class, held at `FluxoDataset.equivalence_checks`:**
+  - one check per encoding: `files` lists all files of the set (e.g. the seven
+    MTF files);
+  - `compared_with`: other files. When absent, `network_model_id` /
+    `experiment_id` name the dataset's own Tier-2 content;
+  - `equivalent`, `differences`, `expected_differences` (one
+    "[kind] key: detail" line each);
+  - `checked_by`, `checker_version`, `check_date`.
+
+  It sits at dataset level rather than inlined on one "representative" file,
+  so a multi-file encoding needs no convention about which file carries the
+  check.
+- **Validator:**
+  - reference integrity for `derived_from` (never the file itself) and for
+    every check reference;
+  - `equivalence-consistency`: `equivalent: true` with unexpected differences
+    is an error;
+  - `equivalence-target` warning.
+- **Verified:** 37 classes; 94 tests pass; ER diagram and core profile
+  regenerated.
+
+---
+
 ## Simplification: Format Mechanics Out, Core Profile + Flat Table In (2026-10-26)
 
 `removed` `added` `schema` `docs` — breaking for documents that used the removed slots
@@ -159,8 +193,9 @@ The 2026-10-25 project review listed what still did not work:
   `check_runnable.py`).
 
 This pass fixes the schema side of all four. The converter-side work
-(adapter, equivalence diff, results readers, `fluxo` CLI) lives in
-`fluxomics_data_converter/src/fluxomics_data_converter/fluxolink/`.
+(adapter, equivalence diff, results readers, `fluxo` CLI) lives in the
+converter repo; since 2026-10-27 it sits in the converter's `io/` layout (see
+the converter-side list below).
 
 ### Required set tiered; benchmark gate in Python (3t-1)
 
@@ -340,12 +375,22 @@ It passes `fluxolink-validate --benchmark` with 0 errors and 103 warnings:
 
 ### Converter side (fluxomics_data_converter, uncommitted)
 
-- **`fluxolink/materialise.py`, `hydrate.py`, `equivalence.py`:** dataset ↔
-  converter model, plus a normalised equivalence diff.
-- **`fluxolink/results/`:** readers for influx_si `<prefix>_res/` and INCA
-  `.mat` files, and for FreeFlux and 13CFLUX v3 live result objects.
-- **`fluxolink/cli.py`:** the `fluxo` command — `ingest`, `validate`,
-  `compare [--inputs]`, `export`, `meta init`.
+Paths as of 2026-10-27: the converter's `link/` package (branch `link-layer`,
+commit 9e06c73; FluxoLink is a link between tool formats, not one more
+`io/` format):
+
+- **`link/record_from_model.py` / `link/model_from_record.py`:** dataset ↔
+  converter model (`to_fluxo_dataset`, `from_fluxo_dataset`).
+  `link/record.py` holds `save_record` / `record_text` / `load_record`.
+- **`link/equivalence.py`:** the normalised equivalence diff (`compare`).
+- **`link/tool_inputs.py`, `link/files.py`, `link/aliases.py`,
+  `link/runs.py`:** write, check and record tool inputs. These fill
+  `derived_from` and `equivalence_checks`, infer aliases and attach results.
+- **`link/results/`:** readers for influx_si `<prefix>_res/` and INCA `.mat`
+  files, and for FreeFlux and 13CFLUX v3 live result objects.
+- **`cli.py`:** the `fluxo` command — `ingest`, `convert --link`,
+  `add-input`, `add-results`, `validate`, `compare [--inputs]`, `export`,
+  `meta init`.
 - **Packaging:** optional extra `linkml = ["fluxolink"]` with a uv path source
   to this repo.
 - **Tests:** 432 converter tests pass, 2 xfailed (376 before).

@@ -189,6 +189,7 @@ class DatasetValidator:
                 "experiments",
                 "source_files",
                 "simulation_runs",
+                "equivalence_checks",
             )
         }
         self.experiments = {str(e.get("id")): e for e in _items(doc, "experiments")}
@@ -238,6 +239,12 @@ class DatasetValidator:
                 self._error(
                     "other-companion", f"/source_files/{i}", "role 'other' needs role_other"
                 )
+            path = f"/source_files/{i}"
+            self._ref(src.get("derived_from"), "source_files", path, "derived_from")
+            if str(src.get("id")) in _ids(src.get("derived_from")):
+                self._error("reference-integrity", path, "a file cannot be derived from itself")
+        for i, check in enumerate(_items(self.doc, "equivalence_checks")):
+            self._check_equivalence(check, f"/equivalence_checks/{i}")
         for i, net in enumerate(_items(self.doc, "networks")):
             self._check_network(net, f"/networks/{i}")
         for i, exp in enumerate(_items(self.doc, "experiments")):
@@ -274,6 +281,32 @@ class DatasetValidator:
     def _check_condition(self, cond: dict[str, Any], path: str) -> None:
         if cond.get("specific_growth_rate") is not None and not cond.get("growth_rate_unit"):
             self._error("growth-rate-unit", path, "specific_growth_rate needs growth_rate_unit")
+
+    def _check_equivalence(self, check: dict[str, Any], path: str) -> None:
+        self._ref(check.get("files"), "source_files", path, "files")
+        self._ref(check.get("compared_with"), "source_files", path, "compared_with")
+        self._ref(check.get("network_model_id"), "networks", path, "network_model_id")
+        self._ref(check.get("experiment_id"), "experiments", path, "experiment_id")
+        differences = check.get("differences") or []
+        if check.get("equivalent") is True and differences:
+            self._error(
+                "equivalence-consistency",
+                path,
+                f"equivalent is true but {len(differences)} unexpected difference(s) are listed",
+            )
+        elif check.get("equivalent") is False and not differences:
+            self._warn(
+                "equivalence-consistency",
+                path,
+                "equivalent is false but no difference is listed",
+            )
+        if not check.get("compared_with") and not self.networks:
+            self._warn(
+                "equivalence-target",
+                path,
+                "no compared_with files and no materialised network: the check names nothing "
+                "it was compared against",
+            )
 
     # -- network -----------------------------------------------------------
 

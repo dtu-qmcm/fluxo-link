@@ -111,6 +111,16 @@ classes:
         range: SimulationRun
         multivalued: true
         inlined_as_list: true
+      equivalence_checks:
+        description: >-
+          Results of re-parsing generated (or foreign) native files and
+          comparing them with the content they should encode. This is how a
+          dataset links tool formats: each tool's input files are recorded
+          once, with what they were derived from and whether they still
+          encode the same problem.
+        range: EquivalenceCheck
+        multivalued: true
+        inlined_as_list: true
     rules:
       - title: benchmark_tier_requires_input_ground_truth
         description: >-

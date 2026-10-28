@@ -75,4 +75,3 @@ CREATE TABLE "FluxRecord" (
 	FOREIGN KEY("FluxRecordTable_id") REFERENCES "FluxRecordTable" (id)
 );
 CREATE INDEX "ix_FluxRecord_id" ON "FluxRecord" (id);
-

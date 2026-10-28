@@ -30,6 +30,10 @@ fluxolink-flatten = "fluxolink.flatten:main"
 
 [project.optional-dependencies]
 dev = [
+    # Exact generator version: the committed Pydantic datamodel is compared
+    # with fresh gen-pydantic output (pre-commit), and the output changes
+    # between linkml releases. Bump together with `just gen-pydantic`.
+    "linkml==1.12.1",
     "pytest>=8.0",
     "pytest-cov>=5.0",
     "ruff>=0.8.0",

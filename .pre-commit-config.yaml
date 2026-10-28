@@ -29,7 +29,9 @@ repos:
       - id: codespell
         args:
           - --skip=src/fluxolink/datamodel/*.py,project/*,docs/*,.venv/*
-          - --ignore-words-list=ist,onetwo
+          # ser: serine fragments (Ser2a); pres: influx_si .pres.csv;
+          # reduct: FluxML <reduct>; te: a user name in recorded paths
+          - --ignore-words-list=ist,onetwo,ser,pres,te,reduct
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.11.2

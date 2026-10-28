@@ -28,6 +28,7 @@ core-profile:
 # SQL DDL for the flat flux table (one row per run x reaction x flux type)
 gen-sql:
     uv run gen-sqlddl src/fluxolink/schema/flux_record.yaml > docs/flux_record.sql
+    uv run python -c "import pathlib; p = pathlib.Path('docs/flux_record.sql'); p.write_text(p.read_text().rstrip() + '\\n')"
 
 # Run the test suite
 test:

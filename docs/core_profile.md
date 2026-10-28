@@ -14,8 +14,8 @@ and tool provenance uses the rest (solver options, residuals, scale factors).
 `fluxo ingest` fills most fields from the native files, so nobody types them
 by hand.
 
-**59 core fields in 12 classes**, out of 333 fields in
-36 classes. Required fields are marked; the rest are recommended.
+**59 core fields in 12 classes**, out of 346 fields in
+37 classes. Required fields are marked; the rest are recommended.
 
 ## FluxoDataset
 
