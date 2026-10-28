@@ -118,7 +118,8 @@ def render() -> str:
     lines += [
         "## Example",
         "",
-        f"A complete core record (`{EXAMPLE.relative_to(REPO)}`, illustrative values):",
+        # as_posix: the page must be identical on Windows, where str(Path) uses "\".
+        f"A complete core record (`{EXAMPLE.relative_to(REPO).as_posix()}`, illustrative values):",
         "",
         "```yaml",
         EXAMPLE.read_text(encoding="utf-8").rstrip(),
